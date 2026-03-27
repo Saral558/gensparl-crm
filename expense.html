@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="description" content="Gensparl CRM - Expense Tracking for staff.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/theme.css">
+  <script src="js/ui/navigation.js"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .exp-title-text { font-weight: 700; font-size: 15px; }
+    .exp-cat-text { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .exp-amt-text { font-weight: 800; color: var(--danger); font-size: 16px; }
+    .exp-date-text { font-size: 12px; color: var(--text-muted); }
+    
+    .photo-area {
+      grid-column: 1 / -1;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px dashed var(--border);
+    }
+    
+    .preview-img-exp {
+      display: none;
+      width: 100%;
+      border-radius: 20px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border);
+      object-fit: contain;
+      height: 200px;
+      background: rgba(0,0,0,0.2);
+    }
+  </style>
+
+</head>
+
+<body>
+  <div class="content animate-in">
+    <header class="premium-header">
+      <div class="user-chip">
+        <div class="user-avatar-small" id="user-avatar">?</div>
+        <div>
+          <div class="user-info-text" id="user-name">Expense Staff</div>
+          <div class="online-badge">
+            <div class="status-dot"></div>
+            Online
+          </div>
+        </div>
+      </div>
+      </button class="btn btn-outline" style="width: 44px; height: 44px; padding: 0;" onclick="loadRecords()" title="Refresh Expenses">
+        </i data-lucide="rotate-cw" id="refresh-icon" style="width: 20px;"></i>
+      </button>
+    </header>
+
+    <div class="card glass animate-in animate-delay-1">
+      <form id="expForm" onsubmit="submitExp(event)">
+        <div class="expense-form-grid">
+          <div class="input-group">
+            <label class="input-label">Title / Item</label>
+            <input type="text" id="eTitle" placeholder="e.g. Office Stationery" title="Expense Title" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Amount (₹)</label>
+            <input type="number" id="eAmt" placeholder="0" title="Amount" required min="0">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Category</label>
+            <select id="eCat" title="Expense Category">
+              <option>Tea/Snacks</option>
+              <option>Electricity</option>
+              <option>Rent</option>
+              <option>Salary</option>
+              <option>Marketing</option>
+              <option>Stationery</option>
+              <option>Maintenance</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Date</label>
+            <input type="date" id="eDate" title="Expense Date">
+          </div>
+          <div class="input-group grid-col-all">
+            <label class="input-label">Narration</label>
+            <input type="text" id="eNarr" placeholder="Additional details..." title="Narration">
+          </div>
+          
+          <!-- Mandatory Photo Section -->
+          <div class="photo-area">
+            <label class="input-label">Photo Proof (Mandatory 📸)</label>
+            <img id="previewImgExp" alt="Expense Receipt" class="preview-img-exp hidden">
+            <div class="flex-center gap-10">
+              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('eCamera').click()" title="Take photo">
+                <i data-lucide="camera"></i> Camera
+              </button>
+              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('fGallery').click()" title="Upload photo">
+                <i data-lucide="image"></i> Gallery
+              </button>
+            </div>
+            <label for="eCamera" class="hidden">Camera Upload</label>
+            </input type="file" id="eCamera" accept="image/*" class="hidden" capture="environment" onchange="previewImg(this)" title="Capture Expense Receipt">
+            <label for="fGallery" class="hidden">Gallery Upload</label>
+            <input type="file" id="fGallery" accept="image/*" class="hidden" onchange="previewImg(this)" title="Choose from Gallery">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-full mt-20" id="subBtn">Save Expense</button>
+      </form>
+    </div>
+
+    <div class="card glass animate-in animate-delay-2">
+      <div class="section-header">
+        <h2>Recent Expenses</h2>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Title & Category</th>
+              <th>Amount</th>
+              <th>Added By</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="expTable">
+            <tr>
+              <td colspan="4" class="empty">Loading records...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      </div>
+    </div>
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item" title="Home">
+        <i data-lucide="layout-grid"></i>
+        Home
+      </a>
+      <button class="icon-btn" onclick="location.reload()" title="Refresh Data">
+        <i data-lucide="refresh-cw" class="icon-20 icon-muted"></i>
+      </button>
+      <button class="icon-btn" onclick="logout()" title="Logout">
+        <i data-lucide="log-out" class="icon-20 icon-muted"></i>
+      </button>
+      <a href="#" class="nav-item active" title="Expenses">
+        <i data-lucide="receipt"></i>
+        Expenses
+      </a>
+      <a href="profile.html" class="nav-item" title="Profile">
+        <i data-lucide="user"></i>
+        Profile
+      </a>
+    </nav>
+  </div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Set mobile camera capture dynamically to avoid HTML lint warnings
+    document.addEventListener('DOMContentLoaded', () => {
+      const camInput = document.getElementById('eCamera');
+      if (camInput) camInput.setAttribute('capture', 'environment');
+    });
+
+    let selectedFile = null;
+    const user = checkAuth('expense');
+    if (user) {
+      window._supabase = window.supabase;
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('user-avatar').textContent = user.name.charAt(0);
+      document.getElementById('eDate').valueAsDate = new Date();
+      loadRecords();
+    }
+
+    function previewPhoto(input) {
+      if (input.files[0]) {
+        selectedFile = input.files[0];
+        const preview = document.getElementById('photoPreview');
+        preview.src = URL.createObjectURL(selectedFile);
+        preview.style.display = 'block';
+      }
+    }
+
+    async function submitExp(e) {
+      e.preventDefault();
+      if (!selectedFile) {
+        alert("❌ Photo proof zaroori hai!");
+        return;
+      }
+      const btn = document.getElementById('subBtn'); btn.textContent = 'Uploading...';
+      try {
+        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'expense', user);
+        btn.textContent = 'Saving...';
+        const payload = {
+          type: document.getElementById('eTitle').value,
+          title: document.getElementById('eTitle').value,
+          amount: parseFloat(document.getElementById('eAmt').value || 0),
+          category: document.getElementById('eCat').value,
+          date: document.getElementById('eDate').value,
+          narration: document.getElementById('eNarr').value,
+          staff_id: user.staffId,
+          added_by_name: user.name,
+          image_url: imageUrl
+        };
+        const { error } = await window._supabase.from('expenses').insert([payload]);
+        if (error) {
+          console.error("Save Error:", error);
+          alert(error.message);
+        } else {
+          alert("✓ Expense Saved with Proof!");
+          document.getElementById('expForm').reset();
+          document.getElementById('eDate').valueAsDate = new Date();
+          document.getElementById('photoPreview').style.display = 'none';
+          selectedFile = null;
+          loadRecords();
+        }
+      } catch (err) { alert("Error: " + err.message); }
+      btn.textContent = 'Save Expense';
+    }
+
+    async function loadRecords() {
+      try {
+        if (!window._supabase) return;
+        const { data, error } = await window._supabase.from('expenses').select('*').order('created_at', { ascending: false }).limit(20);
+        if (error) return;
+        const tbody = document.getElementById('expTable');
+        if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:#94a3b8">No records</td></tr>'; return; }
+        tbody.innerHTML = data.map(r => `
+          <tr>
+            <td><strong class="exp-title-text">${r.title}</strong><br><span class="exp-cat-text">${r.category}</span></td>
+            <td><strong class="exp-amt-text">₹${Number(r.amount).toLocaleString('en-IN')}</strong></td>
+            <td class="exp-cat-text">${r.added_by_name || 'System'}</td>
+            <td class="exp-date-text">${new Date(r.date || r.created_at).toLocaleDateString()}</td>
+          </tr>`).join('');
+      } catch (e) { console.error('Load Error:', e); }
+    }
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+
+</html>

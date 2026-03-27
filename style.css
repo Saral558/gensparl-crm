@@ -1,0 +1,148 @@
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #0f172a;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.login-box {
+  background: #1e293b;
+  padding: 40px;
+  border-radius: 16px;
+  width: 320px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.login-box h2 {
+  margin-bottom: 24px;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #fff;
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #10b981;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #10b981;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #059669;
+}
+
+.dashboard-card {
+  background: #1e293b;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  min-width: 300px;
+}
+
+.text-muted {
+  color: #94a3b8;
+}
+
+.text-secondary {
+  color: #64748b;
+}
+
+.text-success-bold {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-15 {
+  margin-top: 15px;
+}
+
+.mb-10 {
+  margin-bottom: 10px;
+}
+
+.m-15-0 {
+  margin: 15px 0;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.grid-gap-10 {
+  display: grid;
+  gap: 10px;
+}
+
+.fs-11 {
+  font-size: 11px;
+}
+
+/* === Shared Photo Proof Capture (expense, gift, service) === */
+.photo-proof-preview {
+  max-width: 100%;
+  border-radius: 10px;
+  display: none;
+  margin-bottom: 8px;
+}
+
+.photo-proof-preview-expense  { border: 2px solid #be123c; }
+.photo-proof-preview-gift     { border: 2px solid #7c3aed; }
+.photo-proof-preview-service  { border: 2px solid #0284c7; }
+
+.photo-picker {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.btn-photo {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px dashed #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-photo-outline {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px dashed #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  color: #3b82f6;
+  font-weight: 700;
+  cursor: pointer;
+}

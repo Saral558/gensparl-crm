@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="description" content="Gensparl CRM - User Profile and Account Management.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/theme.css">
+  <script src="js/ui/navigation.js"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .profile-card {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 30px;
+      border: 1px solid var(--border);
+      padding: 40px 20px;
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+    }
+    .profile-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 40px;
+      background: var(--grad-premium);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      font-weight: 800;
+      color: white;
+      border: 4px solid var(--border);
+      box-shadow: var(--shadow-premium);
+    }
+    .avatar-container {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 30px;
+      position: relative;
+    }
+    .btn-upload {
+      position: absolute;
+      bottom: -5px;
+      right: -5px;
+      background: var(--primary);
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      border: 3px solid #1a1a1a;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .staff-info-glass {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 30px;
+      border: 1px solid var(--border);
+    }
+    .info-pill { text-align: center; }
+    .info-val { font-weight: 800; font-size: 18px; color: var(--primary); display: block; }
+    .info-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  </style>
+
+</head>
+
+<body>
+    <header class="premium-header">
+      <div class="user-chip">
+        <div class="user-avatar-small" id="user-avatar-header">?</div>
+        <div>
+          <div class="user-info-text" id="user-name-header">Staff Loading...</div>
+          <div class="online-badge">
+            <div class="status-dot"></div>
+            My Profile
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="location.reload()" title="Refresh Data">
+        <i data-lucide="refresh-cw" class="icon-20 icon-muted"></i>
+      </button>
+      <button class="icon-btn" onclick="logout()" title="Logout">
+        <i data-lucide="log-out" class="icon-20 icon-muted"></i>
+      </button>
+    </header>
+
+    <div class="container">
+        <div class="profile-card">
+            <div class="avatar-container">
+                <div id="avatarPreview" class="profile-avatar">U</div>
+                <label for="fileInput" class="btn-upload">
+                    <i data-lucide="camera" class="icon-camera"></i>
+                </label>
+                <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleImage(event)" title="Choose Profile Picture">
+            </div>
+
+            <div class="staff-info-glass">
+                <div class="info-pill">
+                    <span class="info-val" id="staffIdDisplay">#000</span>
+                    <span class="info-label">Staff ID</span>
+                </div>
+                <div class="info-pill">
+                    <span class="info-val" id="roleDisplay">Staff</span>
+                    <span class="info-label">Current Role</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="label">Full Name</label>
+                <input type="text" id="profileName" class="input" placeholder="Your Name" title="Your Full Name">
+            </div>
+
+            <div class="form-group">
+                <label class="label">About / Professional Bio</label>
+                <textarea id="profileAbout" class="textarea" placeholder="Tell us about yourself..."></textarea>
+            </div>
+
+            <button class="btn btn-primary w-full" id="saveBtn" onclick="saveProfile()">
+                Save Profile Changes
+            </button>
+        </div>
+        
+        <!-- Logout Button -->
+        </button class="btn btn-outline w-full mt-20" onclick="logout()" style="color: var(--danger); border-color: var(--danger); background: rgba(239, 68, 68, 0.05)">
+            <i data-lucide="log-out"></i>
+            Sign Out from CRM
+        </button>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item" title="Home">
+        <i data-lucide="layout-grid"></i>
+        Home
+      </a>
+      <a href="#" class="nav-item active" title="Profile">
+        <i data-lucide="user"></i>
+        Profile
+      </a>
+    </nav>
+    <script>
+        let currentUser = null;
+        let selectedFile = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            currentUser = checkAuth();
+            if (!currentUser) return;
+
+            // Header info
+            document.getElementById('user-name-header').textContent = currentUser.name || 'Staff';
+            document.getElementById('user-avatar-header').textContent = (currentUser.name || '?').charAt(0);
+
+            // Load initial data from session
+            document.getElementById('profileName').value = currentUser.name || '';
+            document.getElementById('staffIdDisplay').innerText = `#${currentUser.staffId || '???'}`;
+            document.getElementById('roleDisplay').innerText = currentUser.role || 'Staff';
+
+            // Fetch fresh data from Supabase
+            try {
+                const profile = await crmUtils.fetchProfile(currentUser.id);
+                if (profile) {
+                    document.getElementById('profileAbout').value = profile.about || '';
+                    if (profile.avatar_url) {
+                        updateAvatarPreview(profile.avatar_url);
+                    } else {
+                        document.getElementById('avatarPreview').innerText = (profile.name || 'U').charAt(0).toUpperCase();
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch fresh profile:", err);
+            }
+        });
+
+        function handleImage(e) {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => updateAvatarPreview(e.target.result);
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateAvatarPreview(url) {
+            const preview = document.getElementById('avatarPreview');
+            let styleTag = document.getElementById('dynamic-avatar-style');
+            if (!styleTag) {
+                styleTag = document.createElement('style');
+                styleTag.id = 'dynamic-avatar-style';
+                document.head.appendChild(styleTag);
+            }
+            styleTag.textContent = `.profile-avatar.has-image { background-image: url('${url}'); }`;
+            preview.classList.add('has-image');
+            preview.innerText = '';
+        }
+
+        async function saveProfile() {
+            const btn = document.getElementById('saveBtn');
+            const name = document.getElementById('profileName').value;
+            const about = document.getElementById('profileAbout').value;
+
+            if (!name) return alert("Name is required");
+
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            try {
+                const updates = { name, about };
+
+                if (selectedFile) {
+                    const avatarUrl = await crmUtils.compressAndUpload(selectedFile, 'crm-delivery-proofs', 'avatar', currentUser);
+                    updates.avatar_url = avatarUrl;
+                }
+
+                await crmUtils.updateProfile(currentUser.id, updates);
+                alert("Profile updated successfully!");
+                location.reload();
+            } catch (err) {
+                console.error("Save Error:", err);
+                alert("Error saving profile: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Save Profile Changes";
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+
+</html>

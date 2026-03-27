@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="description" content="Gensparl CRM - Sales Dashboard for staff.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/theme.css">
+  <script src="js/ui/navigation.js"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .stat-blue { color: var(--info); }
+    .stat-green { color: var(--success); }
+    .stat-amber { color: var(--warning); }
+    .amt-cell { font-weight: 800; color: var(--success); }
+    .cust-name { font-weight: 700; font-size: 15px; }
+    .cust-meta, .product-meta { font-size: 11px; color: var(--text-muted); }
+    .qty-cell { font-weight: 700; opacity: 0.8; }
+    .date-cell { font-size: 12px; color: var(--text-muted); }
+    
+    #photoPreview {
+      width: 100%;
+      height: 200px;
+      object-fit: contain;
+      border-radius: 20px;
+      border: 2px dashed var(--border);
+      margin-bottom: 16px;
+      display: none;
+      background: rgba(0,0,0,0.2);
+    }
+  </style>
+
+</head>
+<body>
+  <div class="content animate-in">
+    <header class="premium-header">
+      <div class="user-chip">
+        <div class="user-avatar-small" id="user-avatar">?</div>
+        <div>
+          <div class="user-info-text" id="user-name">Sales Staff</div>
+          <div class="online-badge">
+            <div class="status-dot"></div>
+            Online
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="location.reload()" title="Refresh Data">
+        <i data-lucide="refresh-cw" class="icon-20 icon-muted"></i>
+      </button>
+      <button class="icon-btn" onclick="logout()" title="Logout">
+        <i data-lucide="log-out" class="icon-20 icon-muted"></i>
+      </button>
+    </header>
+
+    <div class="stats-row">
+      <div class="stat-glass">
+        <i data-lucide="shopping-bag" class="icon-20 icon-info"></i>
+        <span class="stat-val" id="totalSales">0</span>
+        <span class="stat-lbl">Total Entries</span>
+      </div>
+      <div class="stat-glass">
+        <i data-lucide="banknote" class="icon-20 icon-success"></i>
+        <span class="stat-val stat-success-text" id="totalAmount">₹0</span>
+        <span class="stat-lbl">Total Amount</span>
+      </div>
+    </div>
+
+    <div class="card glass animate-in animate-delay-1">
+      <div class="section-header">
+        <h2>Record New Sale</h2>
+      </div>
+      <form id="saleForm" onsubmit="submitSale(event)">
+      <div class="sale-form-grid">
+        <div class="input-group">
+          <label class="input-label">Customer Name</label>
+          <input type="text" id="sCustomer" placeholder="Name" title="Customer Name" required>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Mobile No</label>
+          <input type="text" id="sMobile" placeholder="987..." title="Mobile Number" required>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Location</label>
+          <input type="text" id="sLocation" placeholder="City" title="Location" required>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Product Name</label>
+          <input type="text" id="sProduct" placeholder="Model" title="Product Name" required>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Serial No</label>
+          <input type="text" id="sSerial" placeholder="Serial" title="Serial Number">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Quantity</label>
+          <input type="number" id="sQuantity" value="1" min="1" title="Quantity" required>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Total Amount (₹)</label>
+          <input type="number" id="sAmount" placeholder="0" title="Total Amount" required min="0">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Status</label>
+          <select id="sStatus" title="Sale Status">
+            <option value="Paid">Paid</option>
+            <option value="Finance">Finance</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Payment Mode</label>
+          <select id="sMode" title="Payment Mode" required>
+            <option value="Cash">Cash</option>
+            <option value="GPay">UPI / GPay</option>
+            <option value="Credit">Finance / Credit</option>
+            <option value="EMI">EMI</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Profit (₹)</label>
+          <input type="number" id="sProfit" placeholder="0" title="Profit Amount" required min="0">
+        </div>
+        <div class="input-group grid-col-all">
+          <label class="input-label">Remarks</label>
+          <input type="text" id="sNarration" placeholder="Extra details..." title="Additional remarks">
+        </div>
+        <!-- Mandatory Photo Section -->
+        <div class="input-group grid-col-all">
+          <label class="input-label">Photo Proof (Mandatory 📸)</label>
+          <img id="photoPreview" alt="Proof Preview" title="Sale Proof Preview" />
+          <div class="flex-gap-10">
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('sCamera').click()" title="Take photo with camera">
+              <i data-lucide="camera"></i> Camera
+            </button>
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('sGallery').click()" title="Select photo from gallery">
+              <i data-lucide="image"></i> Gallery
+            </button>
+          </div>
+          <label for="sCamera" class="hidden">Camera Upload</label>
+          </input type="file" id="sCamera" accept="image/*" class="hidden" capture="environment" onchange="previewPhoto(this)" title="Capture Sales Proof">
+          <label for="sGallery" class="hidden">Gallery Upload</label>
+          <input type="file" id="sGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Choose from Gallery">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="saleSubmitBtn">Save Sale Record</button>
+    </form>
+  </div>
+
+    <div class="card glass">
+      <div class="section-header">
+        <h2>Recent Sales</h2>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Product & Serial</th>
+              <th>Qty</th>
+              <th>Amount</th>
+              <th>Location</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="salesTable">
+            <tr>
+              <td colspan="6" class="empty">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item" title="Home">
+        <i data-lucide="layout-grid"></i>
+        Home
+      </a>
+      <a href="#" class="nav-item active" title="Sales">
+        <i data-lucide="badge-dollar-sign"></i>
+        Sales
+      </a>
+      <a href="profile.html" class="nav-item" title="Profile">
+        <i data-lucide="user"></i>
+        Profile
+      </a>
+    </nav>
+  </div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Canonical CheckAuth
+    if (user) {
+      window._supabase = window.supabase;
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('user-avatar').textContent = user.name.charAt(0);
+      
+      const camInput = document.getElementById('sCamera');
+      if (camInput) camInput.setAttribute('capture', 'environment');
+
+      loadData();
+    }
+
+    let selectedFile = null;
+
+    function previewImg(input) {
+      if (input.files && input.files[0]) {
+        selectedFile = input.files[0];
+        const preview = document.getElementById('photoPreview');
+        preview.src = URL.createObjectURL(selectedFile);
+        preview.style.display = 'block';
+      }
+    }
+
+    async function submitSale(e) {
+      e.preventDefault();
+
+      if (!selectedFile) {
+        alert("❌ Error: Item Photo Proof is mandatory. Please capture or upload a photo.");
+        return;
+      }
+
+      const btn = document.getElementById('saleSubmitBtn');
+      btn.textContent = 'Uploading Proof...';
+      btn.disabled = true;
+
+      try {
+        // 1. Upload Image
+        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'sale', user);
+
+        btn.textContent = 'Saving Record...';
+
+        const payload = {
+          staff_id: user.staffId,      // TEXT column — stores '1003' style ID
+          salesboy_id: user.id || null, // UUID FK (nullable) — Supabase auth UUID
+          salesboy_name: user.name,
+          staff_name: user.name,
+          customer_name: document.getElementById('sCustomer').value,
+          mobile: document.getElementById('sMobile').value,
+          mobile_no: document.getElementById('sMobile').value,
+          location: document.getElementById('sLocation').value,
+          product_name: document.getElementById('sProduct').value,
+          serial_no: document.getElementById('sSerial').value,
+          quantity: parseInt(document.getElementById('sQuantity').value) || 1,
+          amount: parseFloat(document.getElementById('sAmount').value),
+          profit_amount: parseFloat(document.getElementById('sProfit').value || 0),
+          payment_mode: document.getElementById('sMode').value,
+          payment_method: document.getElementById('sMode').value,  // matches CHECK constraint: 'Cash','GPay','EMI','Credit'
+          narration: document.getElementById('sNarration').value,
+          image_url: imageUrl,
+          image_verified: false
+        };
+
+        // Guarantee salesboy_id is a valid UUID or null to prevent Postgres casting errors
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(payload.salesboy_id)) {
+          payload.salesboy_id = null;
+        }
+
+        const { error } = await window._supabase.from('sales').insert([payload]);
+        if (error) throw error;
+
+        alert("✓ Sale record saved successfully with proof!");
+        document.getElementById('saleForm').reset();
+        document.getElementById('photoPreview').style.display = 'none';
+        selectedFile = null;
+        loadData();
+      } catch (err) {
+        console.error("Submission Error Details:", err);
+        const errorMsg = err.message || JSON.stringify(err);
+        alert("Failed to save record. Backend Error: " + errorMsg);
+      } finally {
+        btn.textContent = 'Save Sale Record';
+        btn.disabled = false;
+      }
+    }
+
+    async function loadData() {
+      try {
+        if (!window._supabase) return;
+        const today = new Date().toISOString().split('T')[0];
+
+        const [{ count: todayC }, { count: totalC }, { data: sales }] = await Promise.all([
+          window._supabase.from('sales').select('*', { count: 'exact', head: true })
+            .eq('staff_id', user.staffId).gte('created_at', today),
+          window._supabase.from('sales').select('*', { count: 'exact', head: true })
+            .eq('staff_id', user.staffId),
+          window._supabase.from('sales').select('*')
+            .eq('staff_id', user.staffId).order('created_at', { ascending: false }).limit(10)
+        ]);
+
+        document.getElementById('todaySales').textContent = todayC ?? 0;
+        document.getElementById('totalSales').textContent = totalC ?? 0;
+        const isFinance = (m) => m && ['credit', 'finance', 'emi'].includes(m.toLowerCase());
+        const financeSales = sales?.filter(s => isFinance(s.payment_mode) || isFinance(s.payment_method)) || [];
+        document.getElementById('totalFinance').textContent = financeSales.length;
+
+        const tbody = document.getElementById('salesTable');
+        if (!sales || sales.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">No sales records found</td></tr>';
+        } else {
+          tbody.innerHTML = sales.map(s => `
+            <tr>
+              <td>
+                <div class="cust-name">${s.customer_name}</div>
+                <div class="cust-meta">${s.mobile || ''}</div>
+              </td>
+              <td>
+                <div>${s.product_name}</div>
+                <div class="product-meta">SN: ${s.serial_no || 'N/A'}</div>
+              </td>
+              <td class="qty-cell">x${s.quantity || 1}</td>
+              <td class="amt-cell">₹${Number(s.amount).toLocaleString('en-IN')}</td>
+              <td>${s.location || '—'}</td>
+              <td class="date-cell">${new Date(s.created_at).toLocaleDateString('en-IN')}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        console.error('Load Error:', e);
+      }
+    }
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+
+</html>

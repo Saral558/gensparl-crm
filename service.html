@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="description" content="Gensparl CRM - Service and Repair Ticket Management.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/theme.css">
+  <script src="js/ui/navigation.js"></script>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .status-pill { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 50px; }
+    .status-normal { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .status-low { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+    .ticket-id-text { font-family: monospace; font-size: 12px; color: var(--text-muted); }
+    .cust-name-text { font-weight: 700; font-size: 15px; }
+    .product-meta-text { font-size: 12px; color: var(--text-muted); }
+    
+    .photo-area {
+      grid-column: 1 / -1;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px dashed var(--border);
+    }
+    
+    .photo-preview-img {
+      display: none;
+      width: 100%;
+      border-radius: 20px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border);
+    }
+  </style>
+
+</head>
+
+<body>
+  <div class="content animate-in">
+    <header class="premium-header">
+      <div class="user-chip">
+        <div class="user-avatar-small" id="user-avatar">?</div>
+        <div>
+          <div class="user-info-text" id="user-name">Service Staff</div>
+          <div class="online-badge">
+            <div class="status-dot"></div>
+            Online
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="location.reload()" title="Refresh Data">
+        <i data-lucide="refresh-cw" class="icon-20 icon-muted"></i>
+      </button>
+      <button class="icon-btn" onclick="logout()" title="Logout">
+        <i data-lucide="log-out" class="icon-20 icon-muted"></i>
+      </button>
+    </header>
+
+    <div class="stats-row">
+      <div class="stat-glass">
+        <i data-lucide="alert-circle" class="icon-20 icon-danger"></i>
+        <span class="stat-val" id="openCount">0</span>
+        <span class="stat-lbl">Pending Tickets</span>
+      </div>
+      <div class="stat-glass">
+        <i data-lucide="ticket" class="icon-20 icon-accent"></i>
+        <span class="stat-val stat-success-text" id="resolvedCount">0</span>
+        <span class="stat-lbl">Today's Goals</span>
+      </div>
+    </div>
+
+    <!-- Create Service Ticket -->
+    <div class="card glass animate-in animate-delay-1">
+  <div class="section-header">
+    <h2>Create Service Ticket</h2>
+  </div>
+  <form id="serviceForm" onsubmit="submitTicket(event)">
+    <div class="service-form-grid">
+      <div class="input-group">
+        <label class="input-label">Customer Name</label>
+        <input type="text" id="custName" placeholder="Name" title="Customer Name" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Mobile Number</label>
+        <input type="text" id="custMobile" placeholder="e.g. 987..." title="Customer Mobile" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Location</label>
+        <input type="text" id="tLocation" placeholder="Address" title="Location" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Product Name</label>
+        <input type="text" id="tProduct" placeholder="Product" title="Product Name" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Serial / Model No</label>
+        <input type="text" id="tSerial" placeholder="Serial" title="Serial Number" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Type</label>
+        <select id="tType" title="Service Type" required>
+          <option value="Service">Service</option>
+          <option value="Demo">Demo</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Login ID (Ref)</label>
+        <input type="text" id="tLoginID" placeholder="Ticket ID" title="Login ID" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Narration</label>
+        <input type="text" id="tNarration" placeholder="Notes" title="Narration">
+      </div>
+
+      <!-- Mandatory Photo Section -->
+      <div class="photo-area">
+        <label class="input-label">Photo Proof (Mandatory 📸)</label>
+        <img id="photoPreview" alt="Photo Proof" class="photo-preview-img">
+        <div class="photo-btn-row">
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('sCamera').click()">
+            <i data-lucide="camera"></i> Camera
+          </button>
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('sGallery').click()">
+            <i data-lucide="image"></i> Gallery
+          </button>
+        </div>
+        <label for="sCamera" class="hidden">Camera Upload</label>
+        <input type="file" id="sCamera" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Capture Service Photo">
+        <label for="sGallery" class="hidden">Gallery Upload</label>
+        <input type="file" id="sGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Choose from Gallery">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary w-full mt-20" id="ticketSubmitBtn">Open Ticket</button>
+  </form>
+
+  </div>
+
+  <div class="card glass animate-in animate-delay-2">
+  <div class="section-header">
+    <h2>Recent Service Tickets</h2>
+  </div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Ticket Info</th>
+          <th>Customer</th>
+          <th>Issue</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="serviceTable">
+        <tr>
+          <td colspan="6" class="empty">Loading tickets...</td>
+        </tr>
+      </tbody>
+    </table>
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item" title="Home">
+        <i data-lucide="layout-grid"></i>
+        Home
+      </a>
+      <a href="#" class="nav-item active" title="Service">
+        <i data-lucide="wrench"></i>
+        Service
+      </a>
+      <a href="profile.html" class="nav-item" title="Profile">
+        <i data-lucide="user"></i>
+        Profile
+      </a>
+    </nav>
+  </div>
+  </div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Set mobile camera capture dynamically to avoid HTML lint warnings
+    document.addEventListener('DOMContentLoaded', () => {
+      const camInput = document.getElementById('sCamera');
+      if (camInput) camInput.setAttribute('capture', 'environment');
+    });
+
+    let selectedFile = null;
+    const user = checkAuth();
+    if (user) {
+      window._supabase = window.supabase;
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('user-avatar').textContent = user.name.charAt(0);
+      loadData();
+    }
+
+    function previewPhoto(input) {
+      if (input.files[0]) {
+        selectedFile = input.files[0];
+        const preview = document.getElementById('photoPreview');
+        preview.src = URL.createObjectURL(selectedFile);
+        preview.style.display = 'block';
+      }
+    }
+
+    async function submitTicket(e) {
+      e.preventDefault();
+      if (!selectedFile) {
+        alert("❌ Photo proof zaroori hai!");
+        return;
+      }
+      document.getElementById('ticketSubmitBtn').textContent = 'Uploading...';
+      try {
+        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'service', user);
+        document.getElementById('ticketSubmitBtn').textContent = 'Opening...';
+        const payload = {
+          customer_name: document.getElementById('tCustomer').value,
+          mobile: document.getElementById('tMobile').value,
+          mobile_no: document.getElementById('tMobile').value,
+          location: document.getElementById('tLocation').value,
+          product_name: document.getElementById('tProduct').value,
+          serial_no: document.getElementById('tSerial').value,
+          service_type: document.getElementById('tType').value,
+          type: document.getElementById('tType').value,
+          login_id: document.getElementById('tLoginID').value,
+          narration: document.getElementById('tNarration').value,
+          problem: document.getElementById('tNarration').value,
+          status: 'Pending',
+          staff_id: user.staffId,
+          staff_name: user.name,
+          added_by_name: user.name,
+          image_url: imageUrl
+        };
+        const { error } = await window._supabase.from('service').insert([payload]);
+        if (error) {
+          console.error("Insert Error:", error);
+          alert("Error: " + error.message);
+        } else {
+          alert("✓ Service Ticket Created!");
+          document.getElementById('serviceForm').reset();
+          document.getElementById('photoPreview').style.display = 'none';
+          selectedFile = null;
+          loadData();
+        }
+      } catch (er) { alert("Upload failed: " + er.message); }
+      document.getElementById('ticketSubmitBtn').textContent = 'Open Ticket';
+    }
+
+    async function markResolved(id) {
+      if (!confirm("Mark this ticket as Done?")) return;
+      try {
+        if (!window._supabase) return;
+        const { error } = await window._supabase.from('service').update({ status: 'Done' }).eq('id', id);
+        if (!error) loadData();
+      } catch (e) { alert("Error connecting to database"); }
+    }
+
+    async function loadData() {
+      try {
+        if (!window._supabase) return;
+        const [{ count: openC }, { count: resC }, { count: totalC }, { data: tickets }] = await Promise.all([
+          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
+          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Done'),
+          window._supabase.from('service').select('*', { count: 'exact', head: true }),
+          window._supabase.from('service').select('*').order('created_at', { ascending: false }).limit(20)
+        ]);
+
+        document.getElementById('openCount').textContent = openC ?? 0;
+        document.getElementById('resolvedCount').textContent = resC ?? 0;
+        document.getElementById('totalCount').textContent = totalC ?? 0;
+
+        const tbody = document.getElementById('serviceTable');
+        if (!tickets || tickets.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">No active tickets</td></tr>';
+          return;
+        }
+        tbody.innerHTML = tickets.map(t => `
+          <tr>
+            <td><strong class="ticket-id-text">${t.login_id || '—'}</strong><br><span class="product-meta-text">${t.service_type || 'Service'}</span></td>
+            <td><strong class="cust-name-text">${t.customer_name}</strong><br><span class="product-meta-text">${t.mobile_no || ''}</span></td>
+            <td><strong class="cust-name-text">${t.product_name}</strong><br><span class="product-meta-text">${t.problem || '—'}</span></td>
+            <td><span class="status-pill ${t.status === 'Done' ? 'status-normal' : 'status-low'}">${t.status}</span></td>
+            <td class="product-meta-text">${new Date(t.created_at).toLocaleDateString()}</td>
+            <td>${t.status === 'Pending' ? `<button class="btn btn-primary btn-hero" style="padding: 6px 12px; font-size: 11px; width: auto;" onclick="markResolved('${t.id}')">✓ Resolve</button>` : `<span class="product-meta-text">Complete</span>`}</td>
+          </tr>`).join('');
+      } catch (e) { console.error('Load Error:', e); }
+    }
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+
+</html>

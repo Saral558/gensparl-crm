@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="description" content="Gensparl CRM - Finance and Payment Management.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/theme.css">
+  <script src="js/ui/navigation.js"></script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .status-pill {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 50px;
+    }
+
+    .status-normal {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+    }
+
+    .status-warning {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+    }
+
+    .status-low {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
+
+    .cust-name-text {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .meta-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .money-text {
+      font-weight: 800;
+      color: var(--success);
+    }
+
+    .amount-input-small {
+      width: 70px;
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .photo-preview {
+      display: none;
+      width: 100%;
+      border-radius: 20px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border);
+    }
+  </style>
+
+</head>
+
+<body>
+  <div class="content animate-in">
+    <header class="premium-header">
+      <div class="user-chip">
+        <div class="user-avatar-small" id="user-avatar">?</div>
+        <div>
+          <div class="user-info-text" id="user-name">Finance Staff</div>
+          <div class="online-badge">
+            <div class="status-dot"></div>
+            Online
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="location.reload()" title="Refresh Data">
+        <i data-lucide="refresh-cw" class="icon-20 icon-muted"></i>
+      </button>
+      <button class="icon-btn" onclick="logout()" title="Logout">
+        <i data-lucide="log-out" class="icon-20 icon-muted"></i>
+      </button>
+    </header>
+
+    <div class="stats-row">
+      <div class="stat-glass">
+        <i data-lucide="activity" class="icon-20 icon-info"></i>
+        <span class="stat-val" id="totDue">₹0</span>
+        <span class="stat-lbl">Total Rev.</span>
+      </div>
+      <div class="stat-glass">
+        <i data-lucide="landmark" class="icon-20 icon-success"></i>
+        <span class="stat-val stat-success-text" id="totPaid">₹0</span>
+        <span class="stat-lbl">Collected</span>
+      </div>
+      <div class="stat-glass">
+        <i data-lucide="clock" class="icon-20 icon-warning"></i>
+        <span class="stat-val stat-warning-text" id="totOut">₹0</span>
+        <span class="stat-lbl">Pending</span>
+      </div>
+    </div>
+
+    <!-- Create Finance Entry -->
+    <div class="card glass animate-in animate-delay-1">
+      <div class="section-header">
+        <h2>Create Finance Entry</h2>
+      </div>
+      <form id="financeForm" onsubmit="submitEntry(event)">
+        <div class="stats-grid grid-2">
+          <div class="input-group">
+            <label class="input-label">Customer Name</label>
+            <input type="text" id="fCustomer" placeholder="Name" title="Customer Name" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Mobile No</label>
+            <input type="text" id="fMobile" placeholder="e.g. 987..." title="Mobile Number" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Finance Company</label>
+            <select id="fCompany" title="Finance Company" required>
+              <option value="Bajaj Finance">Bajaj Finance</option>
+              <option value="IDFC First Bank">IDFC First Bank</option>
+              <option value="TVS Credit">TVS Credit</option>
+              <option value="HDB Financial">HDB Financial</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Salesboy Name</label>
+            <input type="text" id="fSalesboy" placeholder="Name" title="Lead Salesboy Name" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">MOP Price (₹)</label>
+            <input type="number" id="fMOP" placeholder="20000" title="Market Price" required min="0"
+              oninput="calcDisbursement()">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Down Payment (₹)</label>
+            <input type="number" id="fDP" placeholder="7000" title="Down Payment" required min="0"
+              oninput="calcDisbursement()">
+          </div>
+          <div class="input-group">
+            <label class="input-label">EMI Amount (₹)</label>
+            <input type="number" id="fEMI" placeholder="EMI" title="EMI Amount" required min="0">
+          </div>
+          <div class="input-group">
+            <label class="input-label">DBD Charges (₹)</label>
+            <input type="number" id="fDBD" value="0" title="DBD Charges" min="0">
+          </div>
+          <div class="input-group grid-col-all">
+            <label class="input-label">Disbursement (Loan Amount) ₹</label>
+            <input type="text" id="fDisbursement" placeholder="Calculated automatically" disabled class="disb-input"
+              title="Loan Amount">
+          </div>
+
+          <!-- Mandatory Photo Section -->
+          <div class="input-group grid-col-all">
+            <label class="input-label">Finance Document / Approval Photo (Mandatory 📸)</label>
+            <img id="photoPreview" alt="Proof Preview" class="photo-preview">
+            <div class="flex-gap-10">
+              <button type="button" class="btn btn-outline" onclick="document.getElementById('fCamera').click()">
+                <i data-lucide="camera"></i> Camera
+              </button>
+              <button type="button" class="btn btn-outline" onclick="document.getElementById('fGallery').click()">
+                <i data-lucide="image"></i> Gallery
+              </button>
+            </div>
+            <label for="fCamera" class="hidden">Camera Upload</label>
+            <input type="file" id="fCamera" accept="image/*" class="hidden-file-input" onchange="previewImg(this)"
+              title="Capture Finance Photo">
+            <label for="fGallery" class="hidden">Gallery Upload</label>
+            <input type="file" id="fGallery" accept="image/*" class="hidden-file-input" onchange="previewImg(this)"
+              title="Choose from Gallery">
+          </div>
+          <button type="submit" class="btn btn-primary" id="fSubmitBtn">Save Entry</button>
+      </form>
+    </div>
+
+    <div class="card glass animate-in animate-delay-2">
+      <div class="section-header">
+        <h2>Payment Ledger</h2>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer & Staff</th>
+              <th>Finance Terms</th>
+              <th>DP (₹)</th>
+              <th>Loan (₹)</th>
+              <th>Status & Input</th>
+            </tr>
+          </thead>
+          <tbody id="financeTable">
+            <tr>
+              <td colspan="5" class="empty">Loading records...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="app.js"></script>
+    <script>
+      const user = checkAuth('finance');
+      if (user) {
+        window._supabase = window.supabase;
+        document.getElementById('user-name').textContent = user.name;
+        document.getElementById('user-avatar').textContent = user.name.charAt(0);
+
+        const camInput = document.getElementById('fCamera');
+        if (camInput) camInput.setAttribute('capture', 'environment');
+
+        loadData();
+      }
+
+      function calcDisbursement() {
+        const mop = parseFloat(document.getElementById('fMOP').value) || 0;
+        const dp = parseFloat(document.getElementById('fDP').value) || 0;
+        document.getElementById('fDisbursement').value = Math.max(0, mop - dp);
+      }
+
+      let selectedFile = null;
+
+      function previewImg(input) {
+        if (input.files && input.files[0]) {
+          selectedFile = input.files[0];
+          const preview = document.getElementById('photoPreview');
+          preview.src = URL.createObjectURL(selectedFile);
+          preview.style.display = 'block';
+        }
+      }
+
+      async function submitEntry(e) {
+        e.preventDefault();
+
+        if (!selectedFile) {
+          alert("❌ Error: Document/Approval Photo is mandatory. Please capture or upload a photo.");
+          return;
+        }
+
+        const btn = document.getElementById('fSubmitBtn');
+        btn.textContent = 'Uploading Proof...';
+        btn.disabled = true;
+
+        try {
+          // 1. Upload Image
+          const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'finance', user);
+
+          btn.textContent = 'Saving Record...';
+
+          const mop_val = parseFloat(document.getElementById('fMOP').value) || 0;
+          const dp_val = parseFloat(document.getElementById('fDP').value) || 0;
+
+          const payload = {
+            customer_name: document.getElementById('fCustomer').value,
+            mobile_no: document.getElementById('fMobile').value,
+            finance_company: document.getElementById('fCompany').value,
+            salesboy_name: document.getElementById('fSalesboy').value,
+            mop_price: mop_val,
+            dp: dp_val,
+            emi_amount: parseFloat(document.getElementById('fEMI').value) || null,
+            dbd_charges: parseFloat(document.getElementById('fDBD').value) || 0,
+            loan_amount: Math.max(0, mop_val - dp_val),
+            due_amount: Math.max(0, mop_val - dp_val),
+            paid_amount: 0,
+            status: 'active',
+            image_url: imageUrl,
+            image_verified: false
+          };
+
+          if (!window._supabase) {
+            alert("Database not ready.");
+            return;
+          }
+          const { error } = await window._supabase.from('finance').insert([payload]);
+          if (error) throw error;
+
+          alert("✓ Finance entry saved successfully with proof!");
+          document.getElementById('financeForm').reset();
+          document.getElementById('photoPreview').style.display = 'none';
+          selectedFile = null;
+          loadData();
+        } catch (err) {
+          console.error("Finance Error:", err);
+          alert("Error: " + err.message);
+        } finally {
+          btn.textContent = 'Save Entry';
+          btn.disabled = false;
+        }
+      }
+
+      async function updatePayment(id) {
+        const inputEl = document.getElementById('paid_' + id);
+        const newPaid = parseFloat(inputEl.value) || 0;
+        try {
+          if (!window._supabase) return;
+          const { error } = await window._supabase.from('finance').update({ paid_amount: newPaid }).eq('id', id);
+          if (error) {
+            console.error("Update Error:", error);
+            alert("Failed: " + error.message);
+          } else {
+            loadData();
+          }
+        } catch (e) { alert("Error connecting to database"); }
+      }
+
+      async function loadData() {
+        try {
+          if (!window._supabase) return;
+          const { data: records, error } = await window._supabase.from('finance').select('*').order('created_at', { ascending: false });
+          if (error) return;
+
+          let tDue = 0, tPaid = 0;
+          const tbody = document.getElementById('financeTable');
+          if (!records || records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty">No financial records yet</td></tr>';
+          } else {
+            tbody.innerHTML = records.map(r => {
+              const due = Number(r.due_amount || 0);
+              const paid = Number(r.paid_amount || 0);
+              tDue += due; tPaid += paid;
+              let statusHTML = paid >= due && due > 0 ? `<span class="status-pill status-normal">Paid</span>` : paid > 0 ? `<span class="status-pill status-warning">Partial</span>` : `<span class="status-pill status-low">Unpaid</span>`;
+              return `<tr>
+              <td><strong class="cust-name-text">${r.customer_name}</strong><br><span class="meta-text">${r.salesboy_name || 'N/A'}</span></td>
+              <td><strong class="meta-text">${r.finance_company || 'N/A'}</strong><br><span class="meta-text">MOP: ₹${(Number(r.mop_price) || 0).toLocaleString('en-IN')}</span></td>
+              <td class="meta-text">₹${(Number(r.dp) || 0).toLocaleString('en-IN')}</td>
+              <td><strong class="money-text">₹${(Number(r.loan_amount) || 0).toLocaleString('en-IN')}</strong></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  ${statusHTML}
+                  <input type="number" id="paid_${r.id}" class="amount-input-small" value="${paid}" min="0">
+                  <button class="btn btn-primary" style="padding: 6px 10px; font-size: 11px; width: unset" onclick="updatePayment('${r.id}')">Sync</button>
+                </div>
+              </td>
+            </tr>`;
+            }).join('');
+          }
+          document.getElementById('totDue').textContent = '₹' + tDue.toLocaleString('en-IN');
+          document.getElementById('totPaid').textContent = '₹' + tPaid.toLocaleString('en-IN');
+          document.getElementById('totOut').textContent = '₹' + Math.max(0, tDue - tPaid).toLocaleString('en-IN');
+        } catch (e) { console.error('Load Error:', e); }
+      }
+    </script>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item" title="Home">
+        <i data-lucide="layout-grid"></i>
+        Home
+      </a>
+      <a href="#" class="nav-item active" title="Finance">
+        <i data-lucide="landmark"></i>
+        Finance
+      </a>
+      <a href="profile.html" class="nav-item" title="Profile">
+        <i data-lucide="user"></i>
+        Profile
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+
+</html>

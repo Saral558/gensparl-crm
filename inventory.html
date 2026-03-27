@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="description" content="Gensparl CRM - Inventory and Stock Management.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/theme.css">
+  <script src="js/ui/navigation.js"></script>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .item-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 24px;
+      padding: 24px;
+    }
+    .item-card:hover { border-color: var(--accent); }
+    .status-pill { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 50px; }
+    .status-normal { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .status-low { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+    .item-title { font-size: 18px; font-weight: 800; }
+    .item-cat { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .price-text { font-size: 20px; font-weight: 800; color: var(--success); }
+    .stock-text { font-size: 20px; font-weight: 800; }
+  </style>
+
+</head>
+
+<body>
+  <div class="content animate-in">
+    <header class="premium-header">
+      <div class="user-chip">
+        <div class="user-avatar-small" id="user-avatar">?</div>
+        <div>
+          <div class="user-info-text" id="user-name">Inventory Staff</div>
+          <div class="online-badge">
+            <div class="status-dot"></div>
+            Online
+          </div>
+        </div>
+      </div>
+      <div class="header-actions-flex">
+        <button class="icon-btn" onclick="location.reload()" title="Refresh Data">
+        <i data-lucide="refresh-cw" class="icon-20 icon-muted"></i>
+      </button>
+      <button class="icon-btn" onclick="logout()" title="Logout">
+        <i data-lucide="log-out" class="icon-20 icon-muted"></i>
+      </button>
+      </div>
+    </header>
+
+    <div id="inventoryGrid" class="inventory-grid">
+      <!-- Inventory cards loaded dynamically -->
+    </div>
+
+
+
+    <!-- Add Item Modal -->
+    <div class="modal-overlay" id="addModal">
+      <div class="card glass animate-in w-full max-w-450">
+        <div class="section-header">
+          <h2>Add New Item</h2>
+        </div>
+        <form id="addForm">
+          <div class="stats-grid grid-1">
+            <div class="input-group">
+              <label class="input-label">Item Name</label>
+              <input type="text" id="itemName" required placeholder="e.g. Galaxy S24 Ultra" title="Item Name">
+            </div>
+            <div class="grid-2-col">
+              <div class="input-group">
+                <label class="input-label">Buying Price (₹)</label>
+                <input type="number" id="buyPrice" required placeholder="0" title="Buying Price">
+              </div>
+              <div class="input-group">
+                <label class="input-label">Selling Price (₹)</label>
+                <input type="number" id="sellPrice" placeholder="0" title="Selling Price">
+              </div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Stock Quantity</label>
+              <input type="number" id="stockQty" required value="0" title="Quantity">
+            </div>
+            <div class="input-group">
+              <label class="input-label">Category</label>
+              <input type="text" id="category" placeholder="e.g. Mobile Phones" title="Category">
+            </div>
+          </div>
+          <div class="flex-center gap-10 mt-20">
+            <button type="submit" class="btn btn-primary flex-1" title="Save new product">Save Item</button>
+            <button type="button" class="btn btn-outline" onclick="closeModal('addModal')"
+              title="Cancel new product entry">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Update Stock Modal -->
+    <div class="modal-overlay" id="updateModal">
+      <div class="card glass animate-in w-full max-w-400">
+        <div class="section-header">
+          <h2>Update Stock</h2>
+        </div>
+        <p id="updateItemName" class="subtitle mb-20"></p>
+        <form id="updateForm">
+          <input type="hidden" id="updateId">
+          <div class="input-group">
+            <label class="input-label">New Stock Quantity</label>
+            <input type="number" id="newQty" required min="0" title="New Quantity">
+          </div>
+          <div class="flex-center gap-10 mt-20">
+            <button type="submit" class="btn btn-primary flex-1" title="Confirm stock update">Update Stock</button>
+            <button type="button" class="btn btn-outline" onclick="closeModal('updateModal')"
+              title="Discard stock changes">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Custom Alert Modal (Glass Version) -->
+    <div class="modal-overlay" id="lowStockPopup">
+      <div class="card glass animate-in w-full max-w-400 text-center">
+        <div class="fs-40 mb-15">⚠️</div>
+        <h2 class="text-danger mb-10">Low Stock Warning</h2>
+        <p id="popupMessage" class="subtitle mb-25"></p>
+        <button class="btn btn-primary w-full" onclick="closeModal('lowStockPopup')" title="Close low stock warning">I
+          Understand</button>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item" title="Home">
+        <i data-lucide="layout-grid"></i>
+        Home
+      </a>
+      <a href="#" class="nav-item active" title="Inventory">
+        <i data-lucide="box"></i>
+        Inventory
+      </a>
+      <a href="profile.html" class="nav-item" title="Profile">
+        <i data-lucide="user"></i>
+        Profile
+      </a>
+    </nav>
+  </div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if (user) {
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('user-avatar').textContent = user.name.charAt(0);
+      loadInventory();
+    }
+
+      function openModal(id) {
+        const modal = document.getElementById(id);
+        modal.style.display = 'flex';
+      }
+      function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+      async function loadInventory() {
+        const grid = document.getElementById('inventoryGrid');
+        grid.innerHTML = '<div class="grid-loading"><div class="spinner"></div><div>Loading inventory...</div></div>';
+
+        try {
+          const { data, error } = await window.supabase
+            .from('staff_inventory')
+            .select('*')
+            .eq('staff_id', user.id)
+            .order('status', { ascending: true })
+            .order('updated_at', { ascending: false });
+
+          if (error) throw error;
+
+          if (!data || data.length === 0) {
+            grid.innerHTML = '<div class="grid-empty">No items found. Start by adding one!</div>';
+            return;
+          }
+
+          grid.innerHTML = data.map(item => {
+            const isLow = item.stock_quantity < 20;
+            return `
+            <div class="card glass item-card ${isLow ? 'low-stock' : ''}">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start">
+                <div>
+                  <h3 class="item-title">${item.item_name}</h3>
+                  <span class="item-cat">${item.category || 'General'}</span>
+                </div>
+                <span class="status-pill ${isLow ? 'status-low' : 'status-normal'}">
+                  ${isLow ? 'Low Stock' : 'Normal'}
+                </span>
+              </div>
+              
+              <div class="stats-row">
+                <div class="stat-glass stat-glass-padding">
+                  <span class="stat-lbl">Price</span>
+                  <span class="price-text">₹${Number(item.buying_price).toLocaleString()}</span>
+                </div>
+                <div class="stat-glass stat-glass-padding text-right">
+                  <span class="stat-lbl">In Stock</span>
+                  <span class="stock-text ${isLow ? 'text-danger' : 'text-primary'}">${item.stock_quantity}</span>
+                </div>
+              </div>
+
+              <button class="btn btn-outline w-full mt-16" 
+                onclick="openUpdateModal('${item.id}', '${item.item_name}', ${item.stock_quantity})">
+                <i data-lucide="edit-3" style="width: 16px;"></i> Update Stock
+              </button>
+            </div>
+          `;
+          }).join('');
+
+          // Refresh icons
+          if (window.lucide) {
+            lucide.createIcons();
+          }
+
+          const lowItems = data.filter(i => i.stock_quantity < 20);
+          if (lowItems.length > 0) {
+            triggerPopup(`${lowItems.length} item(s) are running low on stock. Refill Required!`);
+          }
+
+        } catch (err) {
+          console.error(err);
+          grid.innerHTML = '<div class="grid-error">Failed to load inventory.</div>';
+        }
+      }
+
+      function triggerPopup(msg) {
+        document.getElementById('popupMessage').textContent = msg;
+        openModal('lowStockPopup');
+      }
+
+      // Add Item Handler
+      document.getElementById('addForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+
+        const payload = {
+          item_name: document.getElementById('itemName').value,
+          buying_price: parseFloat(document.getElementById('buyPrice').value),
+          selling_price: parseFloat(document.getElementById('sellPrice').value || 0),
+          stock_quantity: parseInt(document.getElementById('stockQty').value),
+          category: document.getElementById('category').value,
+          staff_id: user.id
+        };
+
+        try {
+          const { error } = await window.supabase.from('staff_inventory').insert([payload]);
+          if (error) throw error;
+
+          closeModal('addModal');
+          e.target.reset();
+          loadInventory();
+        } catch (err) {
+          alert("Error adding item: " + err.message);
+        } finally {
+          btn.textContent = 'Save Item';
+          btn.disabled = false;
+        }
+      };
+
+      // Update Modal
+      function openUpdateModal(id, name, qty) {
+        document.getElementById('updateId').value = id;
+        document.getElementById('updateItemName').textContent = name;
+        document.getElementById('newQty').value = qty;
+        openModal('updateModal');
+      }
+
+      // Update Stock Handler
+      document.getElementById('updateForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('updateId').value;
+        const qty = parseInt(document.getElementById('newQty').value);
+        const btn = e.target.querySelector('button[type="submit"]');
+
+        btn.textContent = 'Updating...';
+        btn.disabled = true;
+
+        try {
+          const { error } = await window.supabase
+            .from('staff_inventory')
+            .update({ stock_quantity: qty })
+            .eq('id', id);
+
+          if (error) throw error;
+
+          closeModal('updateModal');
+          loadInventory();
+
+          // Check for low stock alert after update
+          if (qty < 20) {
+            triggerPopup("Stock update complete. Warning: This item is now in LOW STOCK status. Refill Required.");
+          }
+
+        } catch (err) {
+          alert("Error updating stock: " + err.message);
+        } finally {
+          btn.textContent = 'Update Stock';
+          btn.disabled = false;
+        }
+      };
+
+    </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+
+</html>

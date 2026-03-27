@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Analytics — Dinesh CRM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="../css/theme.css">
+  <script src="../js/ui/navigation.js"></script>
+  <style>
+    /* ── FILTERS ── */
+    .filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 24px; padding: 15px; border-radius: 12px; }
+    .filter-group { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; }
+    .filter-group label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; white-space: nowrap; }
+    .filter-group select,
+    .filter-group input[type="date"] {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+    .filter-group input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+    .btn-refresh { display: flex; align-items: center; gap: 6px; background: var(--primary); color: #fff; border: none; border-radius: 10px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+    .btn-refresh:hover { opacity: 0.88; }
+    .btn-refresh.spinning svg { animation: spin 0.8s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* ── SUMMARY CARDS ── */
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 28px; }
+    .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; display: flex; align-items: center; gap: 18px; }
+    .card-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 22px; }
+    .card-icon.purple { background: var(--primary-soft); color: var(--primary); }
+    .card-icon.green { background: var(--green-soft); color: var(--green); }
+    .card-icon.amber { background: var(--amber-soft); color: var(--amber); }
+    .card-icon.cyan { background: var(--cyan-soft); color: var(--cyan); }
+    .card-body .label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .card-body .value { font-size: 26px; font-weight: 800; line-height: 1; }
+    .card-body .sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .card-body .sub strong { color: var(--green); }
+
+    /* ── CHARTS GRID ── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 20px; margin-bottom: 28px; }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+    .chart-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .chart-card-header h3 { font-size: 15px; font-weight: 700; }
+    .chart-card-header span { font-size: 11px; color: var(--muted); }
+    .chart-wrap { position: relative; }
+
+    /* ── LEADERBOARD ── */
+    .leaderboard-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+    .leaderboard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .leaderboard-header h3 { font-size: 15px; font-weight: 700; }
+    .leaderboard-rows { display: flex; flex-direction: column; gap: 12px; }
+    .staff-row {
+      display: grid;
+      grid-template-columns: 36px 1fr auto;
+      gap: 14px;
+      align-items: center;
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .staff-row.top { border-color: var(--primary); }
+    .rank-badge { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; }
+    .rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+    .rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #fff; }
+    .rank-3 { background: linear-gradient(135deg, #c47c33, #9c5f23); color: #fff; }
+    .rank-n { background: var(--border); color: var(--muted); }
+    .staff-info .name { font-weight: 700; font-size: 14px; }
+    .staff-info .meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .staff-perf { text-align: right; }
+    .staff-perf .amount { font-size: 18px; font-weight: 800; color: var(--green); }
+    .staff-perf .txn { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .staff-progress { height: 4px; background: var(--border); border-radius: 4px; margin-top: 8px; grid-column: 1/-1; }
+    .staff-progress .bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--primary), var(--cyan)); }
+
+    /* ── PAYMENT METHODS BREAKDOWN ── */
+    .pm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+    .pm-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+    .pm-card .method { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .pm-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .pm-card .amt { font-size: 22px; font-weight: 800; margin-bottom: 24px; }
+
+    .filter-item {
+      margin-top: 0;
+      flex: 1;
+    }
+    .pm-card .txns { font-size: 12px; color: var(--muted); }
+    .pm-card .avg { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .pm-bar { height: 3px; border-radius: 3px; margin-top: 12px; }
+
+    /* ── LOADER / EMPTY ── */
+    .skeleton { display: flex; align-items: center; justify-content: center; padding: 48px; color: var(--muted); font-size: 14px; gap: 10px; }
+    .spinner { width: 22px; height: 22px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .empty-state { text-align: center; padding: 48px; color: var(--muted); }
+    .empty-state .emoji { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+    .empty-state.hidden { display: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } .charts-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) { .summary-grid { grid-template-columns: 1fr; } .pm-grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+
+  <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="brand">📊 Sales Analytics</div>
+    <div class="topbar-right">
+      <div class="user-chip" id="userChip">Admin</div>
+      <button class="btn-back" onclick="history.back()">← Back</button>
+    </div>
+  </div>
+
+  <div class="container content animate-in">
+    <div class="section-header">
+      <div>
+        <h1>Sales Analytics</h1>
+        <p class="subtitle" id="pageSubtitle">Real-time Revenue Analysis</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" id="refreshBtn" onclick="loadAll()">
+          <i data-lucide="refresh-cw" id="refreshIcon"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+
+    <div class="filters glass">
+      <div class="input-group filter-item">
+        <label class="label">Date</label>
+        <input type="date" id="filterDate" class="input" title="Filter by date" placeholder="Select date">
+      </div>
+      <div class="input-group filter-item">
+        <label class="label">Staff</label>
+        <select id="filterStaff" class="input" title="Filter by staff member">
+          <option value="">All Staff</option>
+        </select>
+      </div>
+      <div class="input-group filter-item">
+        <label class="label">Payment</label>
+        <select id="filterPayment" class="input" title="Filter by payment method">
+          <option value="">All Methods</option>
+          <option value="GPay">UPI / GPay</option>
+          <option value="Cash">Cash</option>
+          <option value="EMI">EMI</option>
+          <option value="Credit">Finance / Credit</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="summary-grid" id="summaryGrid">
+      <div class="summary-card"><div class="card-icon purple">💰</div><div class="card-body"><div class="label">Total Sales Today</div><div class="value" id="statTotal">—</div><div class="sub" id="statTotalSub">&nbsp;</div></div></div>
+      <div class="summary-card"><div class="card-icon green">🧾</div><div class="card-body"><div class="label">Total Transactions</div><div class="value" id="statTxns">—</div><div class="sub" id="statTxnSub">&nbsp;</div></div></div>
+      <div class="summary-card"><div class="card-icon amber">🥇</div><div class="card-body"><div class="label">Best Performer</div><div class="value value-md" id="statBest">—</div><div class="sub" id="statBestSub">&nbsp;</div></div></div>
+      <div class="summary-card"><div class="card-icon cyan">💳</div><div class="card-body"><div class="label">Top Payment Method</div><div class="value value-sm" id="statPayment">—</div><div class="sub" id="statPaymentSub">&nbsp;</div></div></div>
+    </div>
+
+    <!-- PAYMENT METHODS BREAKDOWN -->
+    <div class="pm-grid" id="pmGrid">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-card-header"><h3>Payment Method Split</h3><span id="chartDateLabel"></span></div>
+        <div class="chart-wrap"><canvas id="paymentChart" height="280"></canvas></div>
+        <div id="paymentChartEmpty" class="empty-state hidden"><div class="emoji">📭</div><p>No data for selected period</p></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header"><h3>Revenue by Staff</h3><span id="staffChartLabel"></span></div>
+        <div class="chart-wrap"><canvas id="staffChart" height="280"></canvas></div>
+        <div id="staffChartEmpty" class="empty-state hidden"><div class="emoji">👥</div><p>No staff data for selected period</p></div>
+      </div>
+    </div>
+
+    <!-- STAFF LEADERBOARD -->
+    <div class="leaderboard-card">
+      <div class="leaderboard-header">
+        <h3>🏆 Staff Performance Leaderboard</h3>
+        <span id="leaderLabel" class="leader-label">Sorted by sales amount</span>
+      </div>
+      <div class="leaderboard-rows" id="leaderboard">
+        <div class="skeleton"><div class="spinner"></div> Loading staff data...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="../js/supabase-client.js"></script>
+  <script src="../app.js"></script>
+  <script>
+    // ──────────────────────────────────
+    // INITIALIZATION
+    // ──────────────────────────────────
+    const user = checkAuth(null); // null = any role
+    let paymentChartInstance = null;
+    let staffChartInstance = null;
+    let allSalesCache = [];
+
+    const PM_COLORS = { GPay: '#6366f1', Cash: '#10b981', EMI: '#f59e0b', Credit: '#ef4444' };
+    const PM_LABELS = { GPay: '📱 GPay', Cash: '💵 Cash', EMI: '📋 EMI', Credit: '💳 Credit' };
+
+    function goBack() {
+      const u = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      if (u.role === 'admin') window.location.href = 'index.html';
+      else history.back();
+    }
+
+    if (user) {
+      const chip = document.getElementById('userChip');
+      if (chip) chip.textContent = `${user.name} (${user.role?.toUpperCase()})`;
+      // Set today's date
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('filterDate').value = today;
+
+      loadStaffFilter();
+      loadAll();
+    }
+
+    // ──────────────────────────────────
+    // FETCH STAFF FOR FILTER DROPDOWN
+    // ──────────────────────────────────
+    async function loadStaffFilter() {
+      try {
+        const client = window.supabase;
+        let q = client.from('profiles').select('id, name, role').eq('role', 'sales');
+        const { data } = await q;
+        if (data) {
+          const sel = document.getElementById('filterStaff');
+          data.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name;
+            sel.appendChild(opt);
+          });
+        }
+      } catch(e) { console.warn('Staff filter load:', e); }
+    }
+
+    // ──────────────────────────────────
+    // MAIN LOAD FUNCTION
+    // ──────────────────────────────────
+    async function loadAll() {
+      const btn = document.getElementById('refreshBtn');
+      const icon = document.getElementById('refreshIcon');
+      btn.disabled = true;
+      icon.parentElement.classList.add('spinning');
+
+      const selectedDate = document.getElementById('filterDate').value || new Date().toISOString().split('T')[0];
+      const staffId = document.getElementById('filterStaff').value;
+      const paymentMethod = document.getElementById('filterPayment').value;
+
+      const dateStart = selectedDate + 'T00:00:00';
+      const dateEnd = selectedDate + 'T23:59:59';
+
+      const isToday = selectedDate === new Date().toISOString().split('T')[0];
+      document.getElementById('pageSubtitle').textContent = isToday
+        ? `Today, ${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}`
+        : `Data for ${new Date(selectedDate).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
+      document.getElementById('chartDateLabel').textContent = selectedDate;
+      document.getElementById('staffChartLabel').textContent = selectedDate;
+
+      try {
+        const client = window.supabase;
+        let query = client.from('sales').select('*')
+          .gte('created_at', dateStart)
+          .lte('created_at', dateEnd)
+          .order('created_at', { ascending: false });
+
+        // Role-based scoping: staff only sees their own records
+        if (user.role !== 'admin' && user.role !== 'Admin') {
+          query = query.eq('staff_id', user.staffId);
+        }
+
+        // Filters
+        if (staffId) query = query.eq('staff_id', staffId);
+        // Note: payment method filter is applied client-side via getPayment() normalisation
+
+        const { data: sales, error } = await query;
+        if (error) throw error;
+
+        let filteredSales = sales || [];
+        if (paymentMethod) {
+          filteredSales = filteredSales.filter(s => getPayment(s) === paymentMethod);
+        }
+        allSalesCache = filteredSales;
+        renderAll(allSalesCache, selectedDate);
+      } catch(err) {
+        console.error('Load error:', err);
+        alert('Error loading data: ' + err.message);
+      }
+
+      btn.disabled = false;
+      icon.parentElement.classList.remove('spinning');
+    }
+
+
+    // ──────────────────────────────────
+    // AGGREGATION + RENDERING
+    // ──────────────────────────────────
+    function getPayment(row) {
+      const raw = (row.payment_method || row.payment_mode || '').toLowerCase();
+      if (raw === 'upi' || raw === 'gpay' || raw === 'upi / gpay') return 'GPay';
+      if (raw === 'emi') return 'EMI';
+      if (raw === 'credit' || raw === 'finance' || raw === 'finance / emi') return 'Credit';
+      if (raw === 'online' || raw === 'online / card' || raw === 'card') return 'GPay'; // grouping online with GPay
+      if (raw === 'cash') return 'Cash';
+      return 'Cash'; // Fallback to Cash instead of rendering 'unknown' unmapped
+    }
+
+    function getStaffName(row) {
+      return row.staff_name || row.salesboy_name || 'Unknown';
+    }
+
+    function getStaffId(row) {
+      return row.staff_id || row.salesboy_id || null;
+    }
+
+    function renderAll(sales, date) {
+      if (!sales.length) {
+        renderSummaryEmpty();
+        renderPMCards({});
+        renderPaymentChart({});
+        renderStaffChart([]);
+        renderLeaderboard([]);
+        return;
+      }
+
+      // ── Totals
+      const totalAmt = sales.reduce((s, r) => s + Number(r.amount || 0), 0);
+      const avgAmt = totalAmt / sales.length;
+
+      // ── Payment aggregation
+      const pmMap = {};
+      sales.forEach(r => {
+        const pm = getPayment(r);
+        if (!pmMap[pm]) pmMap[pm] = { total: 0, count: 0 };
+        pmMap[pm].total += Number(r.amount || 0);
+        pmMap[pm].count += 1;
+      });
+
+      // ── Staff aggregation
+      const staffMap = {};
+      sales.forEach(r => {
+        const sid = getStaffId(r) || getStaffName(r);
+        if (!staffMap[sid]) staffMap[sid] = { name: getStaffName(r), total: 0, count: 0 };
+        staffMap[sid].total += Number(r.amount || 0);
+        staffMap[sid].count += 1;
+      });
+
+      const staffList = Object.values(staffMap).sort((a, b) => b.total - a.total);
+      const topStaff = staffList[0] || null;
+      const topPM = Object.entries(pmMap).sort((a, b) => b[1].total - a[1].total)[0];
+
+      // ── Summary cards
+      document.getElementById('statTotal').textContent = fmt(totalAmt);
+      document.getElementById('statTotalSub').innerHTML = `<strong>Avg ₹${Math.round(avgAmt).toLocaleString('en-IN')}</strong> per sale`;
+      document.getElementById('statTxns').textContent = sales.length;
+      document.getElementById('statTxnSub').textContent = `Across ${Object.keys(staffMap).length} staff`;
+
+      if (topStaff) {
+        document.getElementById('statBest').textContent = topStaff.name;
+        document.getElementById('statBestSub').innerHTML = `<strong>${fmt(topStaff.total)}</strong> · ${topStaff.count} sales`;
+      }
+      if (topPM) {
+        document.getElementById('statPayment').textContent = topPM[0];
+        document.getElementById('statPaymentSub').innerHTML = `<strong>${fmt(topPM[1].total)}</strong> · ${topPM[1].count} txns`;
+      }
+
+      renderPMCards(pmMap, totalAmt);
+      renderPaymentChart(pmMap);
+      renderStaffChart(staffList);
+      renderLeaderboard(staffList);
+    }
+
+    function fmt(v) {
+      return '₹' + Math.round(v).toLocaleString('en-IN');
+    }
+
+    function renderSummaryEmpty() {
+      ['statTotal','statTxns','statBest','statPayment'].forEach(id => document.getElementById(id).textContent = '—');
+      ['statTotalSub','statTxnSub','statBestSub','statPaymentSub'].forEach(id => document.getElementById(id).textContent = 'No data');
+    }
+
+    // ── Payment Method Cards
+    function renderPMCards(pmMap, totalAmt = 1) {
+      const methods = ['GPay', 'Cash', 'EMI', 'Credit'];
+      document.getElementById('pmGrid').innerHTML = methods.map(pm => {
+        const d = pmMap[pm] || { total: 0, count: 0 };
+        const pct = totalAmt > 0 ? Math.round((d.total / totalAmt) * 100) : 0;
+        const avg = d.count > 0 ? Math.round(d.total / d.count) : 0;
+        const color = PM_COLORS[pm] || '#6366f1';
+        return `
+          <div class="pm-card">
+            <div class="method"><div class="pm-dot" style="background:${color}"></div>${PM_LABELS[pm]}</div>
+            <div class="amt" style="color:${color}">${fmt(d.total)}</div>
+            <div class="txns">${d.count} transactions</div>
+            <div class="avg">Avg: ₹${avg.toLocaleString('en-IN')} · ${pct}% share</div>
+            <div class="pm-bar"><div style="width:${pct}%; height:100%; border-radius:3px; background: ${color}; transition:width 0.4s;"></div></div>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Donut Chart
+    function renderPaymentChart(pmMap) {
+      const canvas = document.getElementById('paymentChart');
+      const empty = document.getElementById('paymentChartEmpty');
+      if (paymentChartInstance) paymentChartInstance.destroy();
+
+      const methods = Object.keys(pmMap).filter(m => pmMap[m].total > 0);
+      if (!methods.length) {
+        canvas.classList.add('hidden');
+        empty.classList.remove('hidden');
+        return;
+      }
+      canvas.classList.remove('hidden');
+      empty.classList.add('hidden');
+
+      paymentChartInstance = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+          labels: methods.map(m => PM_LABELS[m] || m),
+          datasets: [{
+            data: methods.map(m => pmMap[m].total),
+            backgroundColor: methods.map(m => PM_COLORS[m] || '#6366f1'),
+            borderColor: '#131929',
+            borderWidth: 3,
+            hoverBorderWidth: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          cutout: '68%',
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 16, font: { size: 12, family: 'Inter' } } },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const val = ctx.raw;
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = Math.round((val / total) * 100);
+                  return ` ₹${Math.round(val).toLocaleString('en-IN')} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ── Horizontal Bar (Staff Revenue)
+    function renderStaffChart(staffList) {
+      const canvas = document.getElementById('staffChart');
+      const empty = document.getElementById('staffChartEmpty');
+      if (staffChartInstance) staffChartInstance.destroy();
+
+      if (!staffList.length) {
+        canvas.classList.add('hidden');
+        empty.classList.remove('hidden');
+        return;
+      }
+      canvas.classList.remove('hidden');
+      empty.classList.add('hidden');
+
+      staffChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: staffList.map(s => s.name),
+          datasets: [{
+            label: 'Revenue',
+            data: staffList.map(s => s.total),
+            backgroundColor: staffList.map((_, i) => i === 0 ? '#6366f1' : '#1e2d45'),
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ₹${Math.round(ctx.raw).toLocaleString('en-IN')}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#64748b', callback: v => '₹' + Math.round(v / 1000) + 'k' },
+              grid: { color: '#1e2d45' }
+            },
+            y: {
+              ticks: { color: '#f1f5f9', font: { weight: '600' } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    // ── Leaderboard (applyBarWidths merged in — no duplicate declaration)
+    function renderLeaderboard(staffList) {
+      const el = document.getElementById('leaderboard');
+      if (!staffList.length) {
+        el.innerHTML = '<div class="empty-state"><div class="emoji">🏁</div><p>No sales recorded for this period.</p></div>';
+        return;
+      }
+      const maxAmt = staffList[0].total;
+      el.innerHTML = staffList.map((s, i) => {
+        const rank = i + 1;
+        const rankClass = rank <= 3 ? `rank-${rank}` : 'rank-n';
+        const pct = maxAmt > 0 ? Math.round((s.total / maxAmt) * 100) : 0;
+        const avg = s.count > 0 ? Math.round(s.total / s.count) : 0;
+        return `
+          <div class="staff-row ${rank === 1 ? 'top' : ''}">
+            <div class="rank-badge ${rankClass}">${rank <= 3 ? ['🥇','🥈','🥉'][i] : rank}</div>
+            <div class="staff-info">
+              <div class="name">${s.name}</div>
+              <div class="meta">${s.count} sales · avg ${fmt(avg)} per sale</div>
+            </div>
+            <div class="staff-perf">
+              <div class="amount">${fmt(s.total)}</div>
+              <div class="txn">${s.count} transactions</div>
+            </div>
+            <div class="staff-progress">
+              <div class="bar" style="width:${pct}%; height:100%; border-radius:4px; background:linear-gradient(90deg,var(--primary),var(--cyan)); transition:width 0.4s;"></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Filter change events
+    document.getElementById('filterDate').addEventListener('change', loadAll);
+    document.getElementById('filterStaff').addEventListener('change', loadAll);
+    document.getElementById('filterPayment').addEventListener('change', loadAll);
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+</html>
+
+

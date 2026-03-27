@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gensparl CRM - Delivery Manager Console for verifying proofs and managing dispatches.">
+    <title>Delivery Admin — Dinesh Electronics</title>
+    <link rel="stylesheet" href="../css/theme.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../js/ui/navigation.js"></script>
+    <style>
+        .hero-section {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(to bottom, rgba(99, 102, 241, 0.1), transparent);
+            border-bottom: 1px solid var(--border);
+            margin: -20px -20px 30px -20px;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        .input-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .form-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .sticky-footer {
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-primary);
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            margin: 0 -32px -32px -32px;
+            z-index: 100;
+        }
+
+        .item-block {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .item-block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .remove-item {
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .due-highlight {
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 12px;
+        }
+
+        .due-red {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .due-green {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .image-previews {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .preview-thumb {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            width: 100%;
+        }
+
+        .thumb-container {
+            position: relative;
+        }
+
+        .remove-thumb {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--accent);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .w-100 {
+            width: 100%;
+        }
+
+        .mt-24 {
+            margin-top: 24px;
+        }
+
+        .mb-24 {
+            margin-bottom: 24px;
+        }
+
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+
+        .modal-customer-title {
+            margin: 10px 0 4px 0;
+        }
+
+        .modal-content-p-100 {
+            padding-bottom: 100px;
+        }
+
+        .items-title {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .btn-small-fixed {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 12px;
+            height: 36px;
+        }
+
+        .icon-14 {
+            width: 14px;
+        }
+
+        .input-readonly {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .flex-center {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .flex-between-center {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            opacity: 0.5;
+        }
+
+        .scroll-gallery {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .gallery-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .check-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .order-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .proof-img {
+            width: 100%;
+            border-radius: 12px;
+        }
+
+
+
+
+        .hero-title {
+            font-size: 28px;
+            margin-bottom: 8px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .btn-hero {
+            max-width: 280px;
+            margin: 0 auto;
+            height: 56px;
+            font-size: 16px;
+            box-shadow: 0 10px 25px var(--accent-glow);
+        }
+
+        .stat-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 4px;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card.pending {
+            border-bottom: 3px solid var(--danger);
+        }
+
+        .stat-card.done {
+            border-bottom: 3px solid var(--success);
+        }
+
+        .tab-flex {
+            display: flex;
+            gap: 8px;
+            padding: 6px;
+            margin-bottom: 24px;
+        }
+
+        .tab-item {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .tab-item.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        /* Card Improvements */
+        .order-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .order-card:hover {
+            border-color: var(--accent);
+            transform: scale(1.01);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .order-id-tag {
+            font-family: monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .status-pending {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .status-assigned {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--info);
+        }
+
+        .status-picked {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .status-delivered {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .cust-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .cust-addr {
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-footer {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .balance-tag {
+            color: var(--danger);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            transition: opacity 0.3s;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 24px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+
+  <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+</head>
+
+<body>
+    <div class="content animate-in">
+        <div class="hero-section">
+            <h1 class="hero-title">Delivery Hub</h1>
+            <p class="hero-subtitle" id="adminName">Welcome to Admin Dashboard</p>
+            <button class="btn btn-primary btn-hero" onclick="openNewDeliveryModal()">
+                <i data-lucide="plus"></i> New Delivery Entry
+            </button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card glass">
+                <span class="stat-label">Total Volume</span>
+                <span class="stat-value" id="count-total">0</span>
+            </div>
+            <div class="stat-card glass pending">
+                <span class="stat-label">To be Dispatched</span>
+                <span class="stat-value" id="count-pending">0</span>
+            </div>
+            <div class="stat-card glass done">
+                <span class="stat-label">Delivered Orders</span>
+                <span class="stat-value" id="count-done">0</span>
+            </div>
+        </div>
+
+        <div class="tabs glass tab-flex">
+            <button class="tab active tab-item" data-tab="Pending">Pending</button>
+            <button class="tab tab-item" data-tab="Packed">In Progress</button>
+            <button class="tab tab-item" data-tab="Delivered">Completed</button>
+        </div>
+
+        <div id="orders-list"></div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="details-overlay" class="overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="order-id-tag" id="modal-order-id">ORD-XXXX</div>
+                <button onclick="closeModal()" title="Close Details" class="modal-close">&times;</button>
+            </div>
+            <h2 id="modal-customer" class="modal-customer-title">Customer Name</h2>
+            <p id="modal-address" class="cust-addr mb-24">Address...</p>
+
+            <div class="checklist" id="modal-checklist"></div>
+
+            <div class="row-compact mt-24">
+                <div class="flex-1">
+                    <label class="input-label">Select Delivery Agent</label>
+                    <select id="staff-select" class="select-control" onchange="validateForm()"></select>
+                </div>
+                <div class="flex-1">
+                    <label class="input-label">Packing Proof Photo</label>
+                    <div id="proof-placeholder" onclick="document.getElementById('img-input').click()"
+                        class="placeholder-box">
+                        <i data-lucide="camera"></i> <span>Tap to Upload</span>
+                    </div>
+                    <img id="proof-preview" class="proof-img hidden" alt="Proof Preview">
+                    <input type="file" id="img-input" class="hidden" accept="image/*" onchange="handleImage(this)">
+                </div>
+            </div>
+
+            <div class="mt-24">
+                <button class="btn btn-primary" id="btn-submit-dispatch" disabled onclick="submitForDelivery()">Confirm
+                    Dispatch</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Delivery Modal -->
+    <div id="new-delivery-overlay" class="overlay hidden">
+        <div class="modal-content modal-content-p-100">
+            <div class="modal-header">
+                <h2>New Item Entry</h2>
+                <button onclick="closeNewModal()" class="modal-close">&times;</button>
+            </div>
+
+            <div class="form-card">
+                <div class="input-group">
+                    <label class="input-label">Customer Name</label>
+                    <input type="text" id="customerName" placeholder="Enter customer name" required
+                        class="input-control">
+                </div>
+
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label class="input-label">Mobile Number</label>
+                        <input type="number" id="mobile" placeholder="Enter phone number" required
+                            class="input-control">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Delivery Date</label>
+                        <input type="date" id="deliveryDate" class="input-control">
+                        <div class="toggle-container">
+                            <span>Immediate delivery</span>
+                            <label class="switch">
+                                <input type="checkbox" id="immediateToggle" onchange="toggleImmediate(this)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Full Address</label>
+                    <textarea id="address" placeholder="Enter complete delivery address" required
+                        class="input-control"></textarea>
+                </div>
+            </div>
+
+            <div class="flex-between-center">
+                <h3 class="items-title">Items to Deliver</h3>
+                <button class="btn btn-outline btn-small-fixed" onclick="addEntryRow()">
+                    <i data-lucide="plus" class="icon-14"></i> Add More Item
+                </button>
+            </div>
+
+            <div id="new-items-container">
+                <!-- Item blocks will be injected here -->
+            </div>
+
+            <div class="form-card mt-24">
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label class="input-label">Advance Paid (₹)</label>
+                        <input type="number" id="advance" value="0" oninput="updateCalculations()"
+                            class="input-control">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Total Price (₹)</label>
+                        <input type="number" id="total" value="0" readonly class="input-control input-readonly">
+                    </div>
+                </div>
+
+                <div id="due-container" class="due-highlight due-green">
+                    Due Amount: <span id="due">₹0</span>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <label class="input-label">Image Capture Section</label>
+                <button class="btn btn-outline" onclick="document.getElementById('multi-img-input').click()">
+                    <i data-lucide="camera"></i> Capture / Upload Images
+                </button>
+                <input type="file" id="multi-img-input" class="hidden" accept="image/*" multiple
+                    onchange="handleMultiImages(this)">
+                <div id="image-previews" class="image-previews"></div>
+            </div>
+
+            <div class="sticky-footer">
+                <button class="btn btn-primary btn-hero w-100" id="saveBtn" onclick="saveNewRecord()">
+                    Save Record
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/supabase-client.js"></script>
+    <script src="../app.js"></script>
+    <script src="../js/delivery/delivery_store.js"></script>
+    <script>
+        const user = checkAuth('delivery_manager');
+        if (user) {
+            document.getElementById('adminName').innerText = `Welcome, ${user.name}`;
+            refreshUI();
+        }
+
+        let currentView = 'Pending';
+        let activeOrderId = null;
+        let allOrders = [];
+
+        async function refreshUI() {
+            try {
+                allOrders = await DeliveryStore.getAll();
+                const filtered = allOrders.filter(o => {
+                    if (currentView === 'Delivered') return o.status === 'delivered';
+                    if (currentView === 'Packed') return o.status === 'assigned' || o.status === 'picked';
+                    return o.status === 'pending';
+                });
+
+                document.getElementById('count-total').innerText = allOrders.length;
+                document.getElementById('count-pending').innerText = allOrders.filter(o => o.status === 'pending').length;
+                document.getElementById('count-done').innerText = allOrders.filter(o => o.status === 'delivered').length;
+
+                const listEl = document.getElementById('orders-list');
+                listEl.innerHTML = filtered.length ? '' : '<div class="empty-state">No records in this view</div>';
+
+                filtered.forEach(o => {
+                    const card = document.createElement('div');
+                    card.className = `order-card animate-in`;
+                    card.onclick = () => openDetails(o.id);
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span class="order-id-tag">${o.orderNo}</span>
+                            <span class="status-badge status-${o.status}">${o.status}</span>
+                        </div>
+                        <div class="cust-name">${o.customerName}</div>
+                        <div class="cust-addr"><i data-lucide="map-pin" style="width:14px;"></i> ${o.address}</div>
+                        
+                        <div class="card-footer">
+                            <div style="font-size:12px; color:var(--text-muted)">
+                                <i data-lucide="calendar" style="width:14px; vertical-align:middle;"></i> 
+                                ${o.deliveryDate ? o.deliveryDate : 'Immediate'}
+                            </div>
+                            <div class="balance-tag">₹${o.dueAmount || 0} Due</div>
+                        </div>
+                    `;
+                    listEl.appendChild(card);
+                });
+                lucide.createIcons();
+            } catch (err) { console.error(err); }
+        }
+
+        async function openDetails(id) {
+            const order = allOrders.find(o => o.id === id);
+            if (!order) return;
+            activeOrderId = id;
+            document.getElementById('modal-order-id').innerText = order.orderNo;
+            document.getElementById('modal-customer').innerText = order.customerName;
+            document.getElementById('modal-address').innerHTML = `<i data-lucide="map-pin"></i> ${order.address}`;
+
+            const listEl = document.getElementById('modal-checklist');
+            listEl.innerHTML = '';
+
+            // Entry Photos Gallery
+            if (order.entryPhotos && order.entryPhotos.length > 0) {
+                const gallery = document.createElement('div');
+                gallery.className = 'mb-24';
+                gallery.innerHTML = `
+                    <p class="order-meta mb-8">Proof of Booking</p>
+                    <div class="scroll-gallery">
+                        ${order.entryPhotos.map(url => `
+                            <img src="${url}" class="gallery-img" onclick="window.open('${url}')">
+                        `).join('')}
+                    </div>
+                `;
+                listEl.appendChild(gallery);
+            }
+
+            listEl.innerHTML += `<p class="order-meta">Packing Checklist</p>`;
+
+            order.items.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'check-item-row';
+                row.style.marginBottom = '12px';
+                row.innerHTML = `
+                    <div class="check-item">
+                        <input type="checkbox" id="item-${idx}" ${item.packed ? 'checked' : ''} onchange="toggleItemPacked(${idx})">
+                        <label for="item-${idx}">${item.name} <span style="opacity:0.6; margin-left:4px;">x${item.qty}</span></label>
+                    </div>
+                    ${item.image ? `<img src="${item.image}" class="item-thumb-small" onclick="window.open('${item.image}')" title="View Proof">` : ''}
+                `;
+                listEl.appendChild(row);
+            });
+
+            const staffList = await DeliveryStore.getDeliveryStaff();
+            const selectEl = document.getElementById('staff-select');
+            selectEl.innerHTML = '<option value="">Choose Agent...</option>' + (staffList.map(s => `<option value="${s.id}">${s.name}</option>`).join(''));
+            if (order.deliveryBoyId) selectEl.value = order.deliveryBoyId;
+
+            const preview = document.getElementById('proof-preview');
+            const placeholder = document.getElementById('proof-placeholder');
+            if (order.packingProof) {
+                preview.src = order.packingProof;
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                preview.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+
+            document.getElementById('details-overlay').classList.remove('hidden');
+            validateForm(); lucide.createIcons();
+        }
+
+        async function toggleItemPacked(idx) {
+            const order = allOrders.find(o => o.id === activeOrderId);
+            if (!order) return;
+            order.items[idx].packed = document.getElementById(`item-${idx}`).checked;
+            const client = window.supabase;
+            await client.from('orders').update({ product_details: order.items }).eq('order_id', activeOrderId);
+            validateForm();
+        }
+
+        async function handleImage(input) {
+            if (input.files[0]) {
+                const placeholder = document.getElementById('proof-placeholder');
+                const preview = document.getElementById('proof-preview');
+                placeholder.innerHTML = '<i data-lucide="loader" class="spin"></i> Uploading...';
+                lucide.createIcons();
+
+                try {
+                    const url = await utils.compressAndUpload(input.files[0], 'sales-proof', 'packing', user);
+                    preview.src = url;
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    await DeliveryStore.updateOrder(activeOrderId, { packing_proof: url });
+                    const order = allOrders.find(o => o.id === activeOrderId);
+                    if (order) order.packingProof = url;
+                    validateForm();
+                } catch (err) {
+                    alert("Upload failed: " + err.message);
+                    placeholder.innerHTML = '<i data-lucide="camera"></i> <span>Tap to Upload</span>';
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        function validateForm() {
+            const order = allOrders.find(o => o.id === activeOrderId);
+            const staffSelect = document.getElementById('staff-select');
+            if (!order || !staffSelect) return;
+
+            const allChecked = order.items && order.items.length > 0 && order.items.every(item => item.packed);
+            const hasImage = !!order.packingProof;
+            const staffSelected = !!staffSelect.value;
+            document.getElementById('btn-submit-dispatch').disabled = !(allChecked && hasImage && staffSelected);
+        }
+
+        async function submitForDelivery() {
+            const staffSelect = document.getElementById('staff-select');
+            const deliveryBoyId = staffSelect.value;
+            if (!deliveryBoyId) return alert("Select agent");
+
+            const btn = document.getElementById('btn-submit-dispatch');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Dispatching...';
+            lucide.createIcons();
+
+            const res = await DeliveryStore.dispatchOrder(activeOrderId, deliveryBoyId, user.id);
+            if (res.error) {
+                alert("Error: " + res.error.message);
+                btn.disabled = false;
+                btn.innerText = 'Confirm Dispatch';
+            } else {
+                closeModal(); await refreshUI(); alert("Order Dispatched!");
+            }
+        }
+
+        function closeModal() { document.getElementById('details-overlay').classList.add('hidden'); activeOrderId = null; }
+        let entryImages = [];
+
+        function toggleImmediate(cb) {
+            const dateInput = document.getElementById('deliveryDate');
+            if (cb.checked) {
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.value = today;
+                dateInput.disabled = true;
+            } else {
+                dateInput.disabled = false;
+            }
+        }
+
+        function updateCalculations() {
+            let total = 0;
+            document.querySelectorAll('.item-block').forEach(block => {
+                const price = parseFloat(block.querySelector('.item-price').value) || 0;
+                const qty = parseFloat(block.querySelector('.item-qty').value) || 1;
+                total += (price * qty);
+            });
+
+            const advance = parseFloat(document.getElementById('advance').value) || 0;
+            const due = total - advance;
+
+            document.getElementById('total').value = total;
+            document.getElementById('due').innerText = `₹${due}`;
+
+            const dueContainer = document.getElementById('due-container');
+            if (due > 0) {
+                dueContainer.classList.add('due-red');
+                dueContainer.classList.remove('due-green');
+            } else {
+                dueContainer.classList.add('due-green');
+                dueContainer.classList.remove('due-red');
+            }
+        }
+
+        function openNewDeliveryModal() {
+            document.getElementById('new-delivery-overlay').classList.remove('hidden');
+            document.getElementById('new-items-container').innerHTML = '';
+            entryImages = [];
+            document.getElementById('image-previews').innerHTML = '';
+            document.getElementById('immediateToggle').checked = false;
+            document.getElementById('deliveryDate').disabled = false;
+            addEntryRow();
+            lucide.createIcons();
+        }
+
+        function addEntryRow() {
+            const container = document.getElementById('new-items-container');
+            const blockNum = container.children.length + 1;
+            const block = document.createElement('div');
+            block.className = 'item-block animate-in';
+            block.innerHTML = `
+                <div class="item-block-header">
+                    <span>Item #${blockNum}</span>
+                    ${blockNum > 1 ? '<span class="remove-item" onclick="this.closest(\'.item-block\').remove(); updateCalculations()">&times;</span>' : ''}
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Item Name</label>
+                    <input type="text" class="item-name input-control" placeholder="Enter item name">
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label class="input-label">Quantity</label>
+                        <input type="number" class="item-qty input-control" value="1" min="1" oninput="updateCalculations()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Price Per Item (₹)</label>
+                        <input type="number" class="item-price input-control" placeholder="0" oninput="updateCalculations()">
+                    </div>
+                </div>
+            `;
+            container.appendChild(block);
+        }
+
+        async function handleMultiImages(input) {
+            if (!input.files.length) return;
+            const previewContainer = document.getElementById('image-previews');
+
+            for (let file of input.files) {
+                const tempId = Date.now() + Math.random();
+                const thumb = document.createElement('div');
+                thumb.className = 'thumb-container animate-in';
+                thumb.id = `thumb-${tempId}`;
+                thumb.innerHTML = `<img src="" class="preview-thumb"><div class="remove-thumb">&times;</div>`;
+                previewContainer.appendChild(thumb);
+
+                try {
+                    const url = await utils.compressAndUpload(file, 'sales-proof', 'item_entry', user);
+                    entryImages.push({ id: tempId, url });
+                    thumb.querySelector('img').src = url;
+                    thumb.querySelector('.remove-thumb').onclick = () => {
+                        entryImages = entryImages.filter(img => img.id !== tempId);
+                        thumb.remove();
+                    };
+                } catch (err) {
+                    thumb.remove();
+                    alert("Upload failed: " + err.message);
+                }
+            }
+        }
+
+        async function saveNewRecord() {
+            const name = document.getElementById('customerName').value;
+            const mob = document.getElementById('mobile').value;
+            const addr = document.getElementById('address').value;
+            const delDate = document.getElementById('deliveryDate').value;
+
+            if (!name || !mob || !addr) return alert("Please fill all required fields");
+            if (mob.length < 10) return alert("Mobile number must be 10 digits");
+
+            const items = [];
+            document.querySelectorAll('.item-block').forEach(block => {
+                const itemName = block.querySelector('.item-name').value;
+                const qty = block.querySelector('.item-qty').value;
+                const price = block.querySelector('.item-price').value;
+                if (itemName) items.push({
+                    name: itemName,
+                    qty: Number(qty),
+                    price: Number(price),
+                    packed: false,
+                    delivered: false
+                });
+            });
+
+            if (items.length === 0) return alert("Add at least one item with a name");
+
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Saving...';
+            lucide.createIcons();
+
+            const data = {
+                customerName: name,
+                phone: mob,
+                address: addr,
+                items,
+                totalAmount: parseFloat(document.getElementById('total').value) || 0,
+                advancePaid: parseFloat(document.getElementById('advance').value) || 0,
+                deliveryDate: delDate,
+                entryPhotos: entryImages.map(img => img.url)
+            };
+
+            try {
+                const res = await DeliveryStore.saveOrder(data);
+                if (!res.error) {
+                    alert("✓ Record Saved Successfully!");
+                    closeNewModal();
+                    refreshUI();
+                } else {
+                    throw res.error;
+                }
+            } catch (err) {
+                alert("❌ Save Error: " + err.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'Save Record';
+            }
+        }
+
+        function closeNewModal() {
+            document.getElementById('new-delivery-overlay').classList.add('hidden');
+        }
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.onclick = () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentView = tab.dataset.tab; refreshUI();
+            };
+        });
+    </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+
+</html>

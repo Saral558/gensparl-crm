@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gensparl CRM - Professional Delivery Staff Dashboard.">
+    <title>Delivery Dashboard — Gensparl</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            min-height: 100vh;
+            color: #f8fafc;
+            margin: 0;
+        }
+
+        .content {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+
+        /* --- Header --- */
+        .premium-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 10px 0;
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 16px 8px 8px;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        .user-avatar-small {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            box-shadow: 0 0 15px var(--accent-glow);
+            font-size: 16px;
+        }
+
+        .user-info-text {
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .online-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--success);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse-green 2s infinite;
+        }
+
+        .header-refresh-btn {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-refresh-icon {
+            width: 20px;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.6; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- Stats --- */
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-glass {
+            background: var(--glass-bg);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-glass i {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            opacity: 0.15;
+            width: 32px;
+            height: 32px;
+        }
+
+        .stat-val {
+            font-size: 24px;
+            font-weight: 800;
+            display: block;
+        }
+
+        .stat-lbl {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .stat-success-text { color: var(--success); }
+
+        /* --- Tabs --- */
+        .tab-nav-modern {
+            display: flex;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px;
+            border-radius: 14px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 11px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 700;
+            font-size: 13px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #0f172a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* --- Task Cards --- */
+        .task-card-pro {
+            background: var(--glass-bg);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 16px;
+            transition: transform 0.2s;
+            position: relative;
+            border-left-width: 4px;
+        }
+
+        .task-card-pro:active { transform: scale(0.98); }
+
+        .task-card-pro.assigned { border-left-color: var(--info); }
+        .task-card-pro.picked { border-left-color: var(--warning); }
+        .task-card-pro.delivered { border-left-color: var(--success); }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-id {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.05);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .status-badge-mini {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .cust-name {
+            font-size: 18px;
+            font-weight: 800;
+            margin-top: 8px;
+        }
+
+        .addr-box {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 8px 0 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            line-height: 1.4;
+        }
+
+        .addr-icon { width: 14px; }
+
+        .cash-tag {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 14px;
+            text-align: center;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            margin-bottom: 16px;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .items-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .item-pill {
+            background: rgba(255,255,255,0.05);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .chevron-icon { color: var(--accent); }
+
+        /* --- Modal Redesign --- */
+        .workflow-modal {
+            background: #0f172a;
+            border-radius: 32px 32px 0 0;
+            width: 100%;
+            max-width: 600px;
+            position: fixed;
+            bottom: 0;
+            max-height: 95vh;
+            overflow-y: auto;
+            padding: 32px;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-drag-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: -16px auto 24px;
+        }
+
+        .modal-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-cust-label {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .modal-action-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .btn-call {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .step-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent);
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .checklist-container {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .checklist-heading {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .checklist-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .checklist-chk {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+        }
+
+        .checklist-lbl {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .qty-label {
+            opacity: 0.6;
+            font-size: 13px;
+        }
+
+        .camera-trigger {
+            background: rgba(99, 102, 241, 0.05);
+            border: 2px dashed var(--accent);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .camera-trigger:active { background: rgba(99, 102, 241, 0.1); }
+
+        .camera-icon-large {
+            width: 40px;
+            height: 40px;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+
+        .proof-hint-main { font-size: 14px; font-weight: 700; }
+        .proof-hint-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+        .proof-preview-img {
+            width: 100%;
+            border-radius: 20px;
+            border: 2px solid var(--accent);
+            margin-bottom: 12px;
+        }
+
+        .modal-footer-actions { margin-top: 32px; }
+
+        .btn-confirm-ready {
+            background: var(--success);
+            opacity: 0.5;
+        }
+
+        .hint-text-center {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 12px;
+        }
+
+        .hidden { display: none !important; }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            opacity: 0.5;
+            font-weight: 600;
+        }
+
+        /* --- Mobile Bottom Nav --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.85);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            display: flex;
+            padding: 12px 10px calc(12px + var(--safe-bottom));
+            border-top: 1px solid var(--border);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .nav-item.active { color: var(--accent); }
+        .nav-item i { width: 24px; height: 24px; }
+
+        .spin { animation: fa-spin 1s infinite linear; }
+        @keyframes fa-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    </style>
+</head>
+
+<body>
+    <div class="content animate-in">
+        <header class="premium-header">
+            <div class="user-chip">
+                <div class="user-avatar-small" id="user-avatar">?</div>
+                <div>
+                    <div class="user-info-text" id="user-name">Staff</div>
+                    <div class="online-badge">
+                        <div class="status-dot"></div>
+                        Online
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-outline header-refresh-btn" onclick="refreshUI()" title="Refresh Deliveries">
+                <i data-lucide="rotate-cw" id="refresh-icon" class="header-refresh-icon"></i>
+            </button>
+        </header>
+
+        <div class="stats-row">
+        <div class="stat-glass">
+            <i data-lucide="package" class="icon-20 icon-info"></i>
+            <span class="stat-val" id="pendingCount">0</span>
+            <span class="stat-lbl">Pending</span>
+        </div>
+        <div class="stat-glass">
+            <i data-lucide="check-circle" class="icon-20 icon-success"></i>
+            <span class="stat-val stat-success-text" id="deliveredCount">0</span>
+            <span class="stat-lbl">Delivered</span>
+        </div>
+    </div>
+
+        <div class="tab-nav-modern">
+            <button class="tab-btn active" data-tab="active" onclick="switchTab('active', this)" title="Show Pending Deliveries">To-Do</button>
+            <button class="tab-btn" data-tab="history" onclick="switchTab('history', this)" title="Show Completed Deliveries">History</button>
+        </div>
+
+        <div id="active-list" class="tab-content active"></div>
+        <div id="history-list" class="tab-content"></div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item" title="Go to Dashboard Home">
+            <i data-lucide="layout-grid"></i>
+            Home
+        </a>
+        <a href="#" class="nav-item active" title="View Delivery Tasks">
+            <i data-lucide="truck"></i>
+            Tasks
+        </a>
+        <a href="profile.html" class="nav-item" title="View Profile">
+            <i data-lucide="user"></i>
+            Profile
+        </a>
+    </nav>
+
+    <!-- Execution Backdrop -->
+    <div id="execution-overlay" class="overlay hidden">
+        <div class="workflow-modal animate-in">
+            <div class="modal-drag-handle"></div>
+
+            <div class="modal-header-row">
+                <span class="task-id" id="exec-order-id">ORD-XXXX</span>
+                <button onclick="closeModal()" class="modal-close-btn" title="Close Modal">&times;</button>
+            </div>
+
+            <h2 id="exec-customer" class="modal-cust-label">Customer Name</h2>
+            <div id="exec-address" class="addr-box"><i data-lucide="map-pin"></i> Loading...</div>
+
+            <div class="modal-action-row">
+                <a href="#" id="link-call" class="btn btn-outline flex-1 btn-call" title="Call Customer">
+                    <i data-lucide="phone"></i> Call
+                </a>
+                <a href="#" id="link-map" class="btn btn-outline flex-1" target="_blank" title="Open in Maps">
+                    <i data-lucide="navigation"></i> Directions
+                </a>
+            </div>
+
+            <div class="step-pill" id="workflow-step-lbl">Step 1: Check Items</div>
+
+            <div id="exec-checklist" class="checklist-container"></div>
+
+            <div id="proof-section" class="hidden">
+                <div class="camera-trigger" id="proof-placeholder" onclick="document.getElementById('img-camera').click()" title="Capture Delivery Proof">
+                    <i data-lucide="camera" class="camera-icon-large"></i>
+                    <p class="proof-hint-main">Take Delivery Proof</p>
+                    <p class="proof-hint-sub">Photo is mandatory for completion</p>
+                </div>
+                <div id="preview-box" class="hidden">
+                    <img id="proof-preview" class="proof-preview-img" alt="Delivery Proof Preview">
+                    <button class="btn btn-outline btn-danger" onclick="resetPhoto()" title="Retake Photo">Retake Photo</button>
+                </div>
+                </input type="file" id="img-camera" class="hidden" accept="image/*" capture="environment" onchange="handleImage(this)" title="Proof Camera">
+            </div>
+
+            <div id="action-buttons" class="modal-footer-actions"></div>
+        </div>
+    </div>
+
+    <script src="js/supabase-client.js"></script>
+    <script src="app.js"></script>
+    <script src="js/delivery/delivery_store.js"></script>
+    <script>
+        const user = checkAuth('delivery');
+        let currentTab = 'active';
+        let activeOrderId = null;
+        let allOrders = [];
+
+        if (user) {
+            document.getElementById('user-name').innerText = user.name;
+            document.getElementById('user-avatar').innerText = user.name.charAt(0);
+            refreshUI();
+            setInterval(refreshUI, 15000);
+        }
+
+        async function refreshUI() {
+            const icon = document.getElementById('refresh-icon');
+            if (icon) icon.classList.add('spin');
+
+            try {
+                allOrders = await DeliveryStore.getAll();
+                const myOrders = allOrders.filter(o => String(o.deliveryBoyId) === String(user.id));
+
+                const active = myOrders.filter(o => o.status === 'assigned' || o.status === 'picked');
+                const history = myOrders.filter(o => o.status === 'delivered');
+
+                document.getElementById('count-active').innerText = active.length;
+                document.getElementById('count-history').innerText = history.length;
+
+                renderList('active-list', active);
+                renderList('history-list', history);
+
+                lucide.createIcons();
+            } catch (err) { console.error(err); }
+            finally {
+                if (icon) setTimeout(() => icon.classList.remove('spin'), 600);
+            }
+        }
+
+        function renderList(containerId, list) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = list.length ? '' : '<div class="empty-state">No tasks found</div>';
+
+            list.forEach(o => {
+                const card = document.createElement('div');
+                card.className = `task-card-pro ${o.status}`;
+                card.onclick = () => openExecution(o.id);
+                card.title = `Manage Order ${o.orderNo}`;
+
+                card.innerHTML = `
+                    <div class="card-top">
+                        <span class="task-id">${o.orderNo}</span>
+                        <span class="status-badge-mini">${o.status}</span>
+                    </div>
+                    <div class="cust-name">${o.customerName}</div>
+                    <div class="addr-box"><i data-lucide="map-pin" class="addr-icon"></i> ${o.address}</div>
+
+                    <div class="cash-tag">Collect Cash: ₹${Number(o.dueAmount || 0).toLocaleString()}</div>
+
+                    <div class="card-footer">
+                        <div class="items-row">
+                            ${o.items.slice(0, 2).map(i => `<span class="item-pill">${i.name}</span>`).join('')}
+                            ${o.items.length > 2 ? `<span class="item-pill">+${o.items.length - 2} more</span>` : ''}
+                        </div>
+                        <i data-lucide="chevron-right" class="chevron-icon"></i>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function switchTab(tab, el) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`${tab}-list`).classList.add('active');
+        }
+
+        async function openExecution(id) {
+            const order = allOrders.find(o => o.id === id);
+            if (!order) return;
+            activeOrderId = id;
+
+            document.getElementById('exec-order-id').innerText = order.orderNo;
+            document.getElementById('exec-customer').innerText = order.customerName;
+            document.getElementById('exec-address').innerHTML = `<i data-lucide="map-pin"></i> ${order.address}`;
+            document.getElementById('link-call').href = `tel:${order.phone}`;
+            document.getElementById('link-map').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address)}`;
+
+            const listEl = document.getElementById('exec-checklist');
+            listEl.innerHTML = '<p class="checklist-heading">Items Checklist</p>';
+
+            order.items.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'checklist-row';
+                row.innerHTML = `
+                    <input type="checkbox" id="chk-${idx}" class="checklist-chk" ${item.delivered ? 'checked' : ''} onchange="toggleItem(${idx})" title="Check ${item.name}">
+                    <label for="chk-${idx}" class="checklist-lbl">${item.name} <span class="qty-label">x${item.qty}</span></label>
+                `;
+                listEl.appendChild(row);
+            });
+
+            const proofSec = document.getElementById('proof-section');
+            const stepLbl = document.getElementById('workflow-step-lbl');
+
+            if (order.status === 'picked') {
+                proofSec.classList.remove('hidden');
+                stepLbl.innerText = "Step 2: Capture Proof";
+                checkExistingProof(id);
+            } else {
+                proofSec.classList.add('hidden');
+                stepLbl.innerText = "Step 1: Pick Up Orders";
+            }
+
+            const btnArea = document.getElementById('action-buttons');
+            if (order.status === 'assigned') {
+                btnArea.innerHTML = `<button class="btn btn-primary btn-hero w-100" onclick="markPicked()" title="Confirm Pick Up Arrival">Confirm Pick Up</button>`;
+            } else if (order.status === 'picked') {
+                btnArea.innerHTML = `
+                    <button class="btn btn-primary btn-hero w-100 btn-confirm-ready" id="btn-done" disabled onclick="markDone()" title="Finalize Delivery Completion">Confirm Delivery</button>
+                    <p id="hint" class="hint-text-center">Finish checklist & take photo</p>
+                `;
+            } else {
+                btnArea.innerHTML = `<button class="btn btn-outline w-100" disabled>Already Delivered</button>`;
+            }
+
+            document.getElementById('execution-overlay').classList.remove('hidden');
+            validateForm(); lucide.createIcons();
+        }
+
+        async function checkExistingProof(id) {
+            const { data } = await window.supabase.from('orders').select('delivery_proof').eq('order_id', id).single();
+            const preview = document.getElementById('proof-preview');
+            const placeholder = document.getElementById('proof-placeholder');
+            const pbox = document.getElementById('preview-box');
+
+            if (data?.delivery_proof) {
+                preview.src = data.delivery_proof;
+                pbox.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                validateForm();
+            }
+        }
+
+        async function handleImage(input) {
+            if (!input.files[0]) return;
+            const placeholder = document.getElementById('proof-placeholder');
+            placeholder.innerHTML = `<i data-lucide="loader" class="spin camera-icon-large"></i><p>Uploading Proof...</p>`;
+            lucide.createIcons();
+
+            try {
+                const url = await utils.compressAndUpload(input.files[0], 'sales-proof', 'delivery', user);
+                await window.supabase.from('orders').update({ delivery_proof: url }).eq('order_id', activeOrderId);
+
+                document.getElementById('proof-preview').src = url;
+                document.getElementById('preview-box').classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                validateForm();
+            } catch (err) {
+                alert("Upload failed: " + err.message);
+                placeholder.innerHTML = `<i data-lucide="camera" class="camera-icon-large"></i><p>Try Again</p>`;
+                lucide.createIcons();
+            }
+        }
+
+        async function toggleItem(idx) {
+            const order = allOrders.find(o => o.id === activeOrderId);
+            order.items[idx].delivered = document.getElementById(`chk-${idx}`).checked;
+            await window.supabase.from('orders').update({ product_details: order.items }).eq('order_id', activeOrderId);
+            validateForm();
+        }
+
+        function validateForm() {
+            const order = allOrders.find(o => o.id === activeOrderId);
+            if (!order || order.status !== 'picked') return;
+
+            const btn = document.getElementById('btn-done');
+            const hint = document.getElementById('hint');
+            const allChecked = order.items.every(i => i.delivered);
+            const hasPhoto = !document.getElementById('preview-box').classList.contains('hidden') || !!document.getElementById('proof-preview').src;
+
+            const ready = allChecked && hasPhoto;
+            if (btn) {
+                btn.disabled = !ready;
+                btn.style.opacity = ready ? '1' : '0.5';
+            }
+            if (hint) {
+                if (!allChecked) hint.innerText = "Check all items first";
+                else if (!hasPhoto) hint.innerText = "Take delivery photo";
+                else hint.innerText = "Ready to finish!";
+            }
+        }
+
+        async function markPicked() {
+            const res = await DeliveryStore.pickOrder(activeOrderId);
+            if (!res.error) { refreshUI(); openExecution(activeOrderId); }
+        }
+
+        async function markDone() {
+            const res = await DeliveryStore.completeOrder(activeOrderId);
+            if (!res.error) { closeModal(); refreshUI(); }
+        }
+
+        function resetPhoto() {
+            document.getElementById('preview-box').classList.add('hidden');
+            document.getElementById('proof-placeholder').classList.remove('hidden');
+            document.getElementById('proof-preview').src = '';
+            validateForm();
+        }
+
+        function closeModal() { document.getElementById('execution-overlay').classList.add('hidden'); }
+    </script>
+</body>
+</html>

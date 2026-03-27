@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Verification — Dinesh CRM</title>
+    <link rel="stylesheet" href="../css/theme.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../js/ui/navigation.js"></script>
+    <style>
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .filter-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+
+  <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+</head>
+<body>
+    <div class="content animate-in">
+        <header class="section-header">
+            <div>
+                <h1>Sales Verification</h1>
+                <p class="subtitle" id="stats">
+                    Total: <span id="totalCount">0</span> | Pending: <span id="pendingCount">0</span>
+                </p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="loadRecords()">
+                    <i data-lucide="refresh-cw"></i> Refresh
+                </button>
+            </div>
+        </header>
+
+        <div class="card glass mb-24">
+            <div class="filter-grid">
+                <div class="input-group">
+                    <label class="label">View Status</label>
+                    <select id="statusFilter" class="input" onchange="loadRecords()" title="Filter by Status">
+                        <option value="all">All Records</option>
+                        <option value="pending" selected>Pending Verification</option>
+                        <option value="verified">Verified Only</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label class="label">Staff Filter</label>
+                    <input type="text" id="staffFilter" class="input" placeholder="Search staff name..." oninput="loadRecords()" title="Enter staff name to filter">
+                </div>
+            </div>
+        </div>
+
+        <div class="card glass overflow-hidden">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Proof</th>
+                            <th>Staff / Branch</th>
+                            <th>Customer</th>
+                            <th>Product / Price</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsBody">
+                        <tr><td colspan="7" class="loading-state">No records loaded...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <span class="lightbox-close">&times;</span>
+        <img id="lightboxImg" src="" alt="Proof Preview" title="Evidence Photo Mockup">
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-client.js"></script>
+    <script src="../app.js"></script>
+    <script>
+        const user = checkAuth('admin'); // Only admins can see this
+
+        async function loadRecords() {
+            const tbody = document.getElementById('recordsBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loading-text">Loading records...</td></tr>';
+
+            try {
+                // 1. Fetch from both tables
+                const [salesRes, financeRes] = await Promise.all([
+                    window.supabase.from('sales').select('*').not('image_url', 'is', null).order('created_at', { ascending: false }),
+                    window.supabase.from('finance').select('*').not('image_url', 'is', null).order('created_at', { ascending: false })
+                ]);
+
+                if (salesRes.error) throw salesRes.error;
+                if (financeRes.error) throw financeRes.error;
+
+                // 2. Map to common format
+                const salesData = (salesRes.data || []).map(r => ({
+                    id: r.id,
+                    type: 'sales',
+                    date: r.created_at,
+                    image_url: r.image_url,
+                    staff_name: r.staff_name || r.staff_id || 'Unknown',
+                    customer_name: r.customer_name,
+                    mobile: r.mobile_no || r.mobile || 'N/A',
+                    product: r.product_name,
+                    price: r.amount || r.sale_amount,
+                    verified: r.image_verified,
+                    branch: r.location || 'Main Branch'
+                }));
+
+                const financeData = (financeRes.data || []).map(r => ({
+                    id: r.id,
+                    type: 'finance',
+                    date: r.created_at,
+                    image_url: r.image_url,
+                    staff_name: r.salesboy_name || 'Unknown',
+                    customer_name: r.customer_name,
+                    mobile: r.mobile_no || 'N/A',
+                    product: `Finance: ${r.finance_company}`,
+                    price: r.loan_amount,
+                    verified: r.image_verified,
+                    branch: 'Finance Section'
+                }));
+
+                let allData = [...salesData, ...financeData].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                // 3. Apply Filters
+                const status = document.getElementById('statusFilter').value;
+                if (status === 'pending') allData = allData.filter(d => !d.verified);
+                if (status === 'verified') allData = allData.filter(d => d.verified);
+
+                const staffSearch = document.getElementById('staffFilter').value.trim().toLowerCase();
+                if (staffSearch) allData = allData.filter(d => d.staff_name.toLowerCase().includes(staffSearch));
+
+                // 4. Update Stats
+                document.getElementById('totalCount').textContent = allData.length;
+                document.getElementById('pendingCount').textContent = allData.filter(d => !d.verified).length;
+
+                if (allData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; opacity:0.5;">No records found matching criteria.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = allData.map(record => {
+                    const date = new Date(record.date).toLocaleDateString('en-IN', {
+                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                    });
+                    
+                    return `
+                        <tr>
+                            <td class="meta-text" style="color: var(--muted);">${date}</td>
+                            <td>
+                                <img src="${record.image_url}" class="thumbnail" onclick="openLightbox('${record.image_url}')" title="Click to enlarge">
+                            </td>
+                            <td>
+                                <strong>${record.staff_name}</strong><br>
+                                <span class="meta-text">${record.branch}</span>
+                            </td>
+                            <td>
+                                ${record.customer_name}<br>
+                                <span class="meta-text">${record.mobile}</span>
+                            </td>
+                            <td>
+                                <strong>${record.product}</strong><br>
+                                <span class="price-text">₹${Number(record.price).toLocaleString()}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${record.verified ? 'verified' : 'unverified'}">
+                                    ${record.verified ? 'VERIFIED' : 'PENDING'}
+                                </span>
+                            </td>
+                            <td>
+                                ${!record.verified ? `
+                                    <button class="btn-verify" onclick="verifyRecord('${record.id}', '${record.type}')">Verify</button>
+                                ` : '<i data-lucide="check-circle" class="icon-verified"></i>'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                lucide.createIcons();
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--red);">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function verifyRecord(id, type) {
+            try {
+                const { error } = await window.supabase
+                    .from(type)
+                    .update({ image_verified: true })
+                    .eq('id', id);
+
+                if (error) throw error;
+                loadRecords();
+            } catch (err) {
+                alert("Verification failed: " + err.message);
+            }
+        }
+
+        function openLightbox(url) {
+            document.getElementById('lightboxImg').src = url;
+            document.getElementById('lightbox').style.display = 'flex';
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').style.display = 'none';
+        }
+
+        // Initial Load
+        loadRecords();
+    </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+</html>
+

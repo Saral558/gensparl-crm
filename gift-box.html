@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Gensparl CRM - Gift and Promotion tracking for customer engagement.">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/theme.css">
+  <script src="js/ui/navigation.js"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .bill-no-text { font-family: monospace; font-size: 13px; color: var(--text-muted); }
+    .cust-name-text { font-weight: 700; font-size: 15px; }
+    .gift-item-text { font-weight: 800; color: var(--accent); }
+    .gift-val-text { font-weight: 800; color: var(--success); }
+    
+    .photo-area {
+      grid-column: 1 / -1;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px dashed var(--border);
+    }
+    
+    .preview-img-gift {
+      display: none;
+      width: 100%;
+      border-radius: 20px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border);
+      object-fit: contain;
+      height: 200px;
+      background: rgba(0,0,0,0.2);
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+</head>
+
+<body>
+  <div class="content animate-in">
+    <header class="premium-header">
+      <div class="user-chip">
+        <div class="user-avatar-small" id="user-avatar">?</div>
+        <div>
+          <div class="user-info-text" id="user-name">Gift Staff</div>
+          <div class="online-badge">
+            <div class="status-dot"></div>
+            Online
+          </div>
+        </div>
+      </div>
+      </button class="btn btn-outline" style="width: 44px; height: 44px; padding: 0;" onclick="loadRecords()" title="Refresh Records">
+        </i data-lucide="rotate-cw" id="refresh-icon" style="width: 20px;"></i>
+      </button>
+    </header>
+
+    <div class="card glass animate-in animate-delay-1">
+      <form id="giftForm" onsubmit="submitGift(event)">
+        <div class="gift-form-grid">
+          <div class="input-group">
+            <label class="input-label">Customer Name</label>
+            <input type="text" id="gCust" placeholder="Name" title="Customer Name" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Bill No / Sale ID</label>
+            <input type="text" id="gBill" placeholder="e.g. s1" title="Bill Number" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Gift Item</label>
+            <select id="gItem" title="Select Gift Item">
+              <option>Bluetooth Speaker</option>
+              <option>Earphones</option>
+              <option>Power Bank</option>
+              <option>LED Light</option>
+              <option>Smart Watch</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Value (₹)</label>
+            <input type="number" id="gVal" placeholder="0" title="Gift Value">
+          </div>
+          <div class="input-group grid-col-all">
+            <label class="input-label">Remarks</label>
+            <input type="text" id="gRem" placeholder="Details about this gift..." title="Remarks">
+          </div>
+          
+          <!-- Mandatory Photo Section -->
+          <div class="photo-area">
+            <label class="input-label">Photo Proof (Mandatory 📸)</label>
+            <img id="photoPreview" alt="Photo Proof" class="photo-proof-preview-gift preview-img-gift hidden">
+            <div class="flex-center gap-10">
+              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('img-camera').click()" title="Take photo">
+                <i data-lucide="camera"></i> Camera
+              </button>
+              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('gGallery').click()" title="Upload photo">
+                <i data-lucide="image"></i> Gallery
+              </button>
+            </div>
+            </input type="file" id="img-camera" class="hidden" accept="image/*" capture="environment" onchange="handleImage(this)" title="Capture Gift Photo">
+            <input type="file" id="gGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Gallery input">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-full mt-20" id="subBtn">Save Gift Entry</button>
+      </form>
+    <div class="stats-row">
+      <div class="stat-glass">
+        <i data-lucide="gift" class="icon-20 icon-accent"></i>
+        <span class="stat-val" id="totalGifts">0</span>
+        <span class="stat-lbl">Gifts Given</span>
+      </div>
+      <div class="stat-glass">
+        <i data-lucide="award" class="icon-20 icon-success"></i>
+        <span class="stat-val stat-success-text" id="activeRewards">0</span>
+        <span class="stat-lbl">Active Rewards</span>
+      </div>
+    </div>
+    </div>
+
+    <div class="card glass animate-in animate-delay-2">
+      <div class="section-header">
+        <h2>Gift Log</h2>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer & Bill</th>
+              <th>Gift Item</th>
+              <th>Value</th>
+              <th>Given By</th>
+            </tr>
+          </thead>
+          <tbody id="giftTable">
+            <tr>
+              <td colspan="4" class="empty">Loading records...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item" title="Home">
+        <i data-lucide="layout-grid"></i>
+        Home
+      </a>
+      <a href="#" class="nav-item active" title="Gifts">
+        <i data-lucide="gift"></i>
+        Gifts
+      </a>
+      <a href="profile.html" class="nav-item" title="Profile">
+        <i data-lucide="user"></i>
+        Profile
+      </a>
+      <button class="icon-btn" onclick="location.reload()" title="Refresh Data">
+        <i data-lucide="refresh-cw" class="icon-20 icon-muted"></i>
+      </button>
+      <button class="icon-btn" onclick="logout()" title="Logout">
+        <i data-lucide="log-out" class="icon-20 icon-muted"></i>
+      </button>
+    </nav>
+  </div>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const camInput = document.getElementById('gCamera');
+      if (camInput) camInput.setAttribute('capture', 'environment');
+    });
+
+    let selectedFile = null;
+    const user = checkAuth('crm');
+    if (user) {
+      window._supabase = window.supabase;
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('user-avatar').textContent = user.name.charAt(0);
+      loadRecords();
+    }
+
+    function previewPhoto(input) {
+      if (input.files[0]) {
+        selectedFile = input.files[0];
+        const preview = document.getElementById('photoPreview');
+        preview.src = URL.createObjectURL(selectedFile);
+        preview.classList.remove('hidden');
+        preview.classList.add('block');
+      }
+    }
+
+    async function submitGift(e) {
+      e.preventDefault();
+      if (!selectedFile) {
+        alert("❌ Photo proof zaroori hai!");
+        return;
+      }
+      const btn = document.getElementById('subBtn'); btn.textContent = 'Uploading...';
+      try {
+        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'gift', user);
+        btn.textContent = 'Saving...';
+        const payload = {
+          customer_name: document.getElementById('gCust').value,
+          bill_no: document.getElementById('gBill').value,
+          gift_item: document.getElementById('gItem').value,
+          gift_value: parseFloat(document.getElementById('gVal').value || 0),
+          remarks: document.getElementById('gRem').value,
+          staff_id: user.staffId,
+          given_by_name: user.name,
+          image_url: imageUrl
+        };
+        const { error } = await window._supabase.from('gifts').insert([payload]);
+        if (error) {
+          console.error("Save Error:", error);
+          alert(error.message);
+        } else {
+          alert("✓ Gift Entry Saved with Proof!");
+          document.getElementById('giftForm').reset();
+          const preview = document.getElementById('photoPreview');
+          preview.classList.add('hidden');
+          preview.classList.remove('block');
+          selectedFile = null;
+          loadRecords();
+        }
+      } catch (err) { alert("Error: " + err.message); }
+      btn.textContent = 'Save Gift Entry';
+    }
+
+    async function loadRecords() {
+      try {
+        if (!window._supabase) return;
+        const { data, error } = await window._supabase.from('gifts').select('*').order('created_at', { ascending: false }).limit(20);
+        if (error) return;
+        const tbody = document.getElementById('giftTable');
+        if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="no-records-cell">No records</td></tr>'; return; }
+        tbody.innerHTML = data.map(r => `
+          <tr>
+            <td><strong class="cust-name-text">${r.customer_name}</strong><br><span class="bill-no-text">Bill: ${r.bill_no}</span></td>
+            <td><strong class="gift-item-text">${r.gift_item}</strong></td>
+            <td><strong class="gift-val-text">₹${Number(r.gift_value).toLocaleString('en-IN')}</strong></td>
+            <td class="bill-no-text">${r.given_by_name || 'System'}</td>
+          </tr>`).join('');
+      } catch (e) { console.error('Load Error:', e); }
+    }
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
+</body>
+
+</html>
