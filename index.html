@@ -329,12 +329,20 @@
             try {
                 const user = JSON.parse(userData);
                 if (user && user.role) {
+                    // Normalize legacy roles from cache automatically
+                    let normalizedRole = user.role;
+                    if (['sales', 'service', 'finance', 'expense', 'inventory'].includes(normalizedRole)) {
+                        normalizedRole = 'staff';
+                    } else if (normalizedRole === 'delivery' || normalizedRole === 'delivery_manager') {
+                        normalizedRole = 'delivery_boy';
+                    }
+
                     const routeMap = {
                         admin: "ADMIN/index.html",
                         staff: "sales.html",
                         delivery_boy: "delivery_boy.html"
                     };
-                    const targetUrl = routeMap[user.role] || "index.html";
+                    const targetUrl = routeMap[normalizedRole] || "index.html";
                     if (targetUrl !== "index.html") window.location.replace(targetUrl);
                 }
             } catch (e) { console.error("Session parse error", e); }
@@ -397,10 +405,18 @@
                     profile = syncProfile;
                 }
 
+                // 🚀 AUTO-UPGRADE LEGACY ROLES TO NEW RBAC TIERS LIVE
+                let normalizedRole = profile?.role || 'staff';
+                if (['sales', 'service', 'finance', 'expense', 'inventory'].includes(normalizedRole)) {
+                    normalizedRole = 'staff';
+                } else if (normalizedRole === 'delivery' || normalizedRole === 'delivery_manager') {
+                    normalizedRole = 'delivery_boy';
+                }
+
                 const sessionUser = {
                     id: profile?.id || authData?.user?.id,
                     staffId: profile?.staff_id || id,
-                    role: profile?.role || 'staff', // strict fallback
+                    role: normalizedRole,
                     name: profile?.name || (authData?.user?.email ? authData.user.email.split('@')[0] : 'User')
                 };
 

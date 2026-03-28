@@ -78,11 +78,19 @@ async function login() {
       console.warn("Profile not found, using defaults");
     }
 
+    // 🚀 AUTO-UPGRADE LEGACY ROLES TO NEW RBAC TIERS
+    let normalizedRole = profile?.role || 'staff';
+    if (['sales', 'service', 'finance', 'expense', 'inventory'].includes(normalizedRole)) {
+        normalizedRole = 'staff';
+    } else if (normalizedRole === 'delivery' || normalizedRole === 'delivery_manager') {
+        normalizedRole = 'delivery_boy';
+    }
+
     // 4. Map to CRM session object
     const sessionUser = {
       id: profile?.id || (authData?.user?.id),
       staffId: profile?.staff_id || idValue,
-      role: profile?.role || 'staff', // Base role fallback
+      role: normalizedRole,
       name: profile?.name || (authData?.user?.email ? authData.user.email.split('@')[0] : 'User'),
       avatar: profile?.avatar_url || null,
       about: profile?.about || ''
