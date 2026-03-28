@@ -2,12 +2,17 @@
 // STAFF MANAGEMENT MODULE (Admin only)
 // ============================================================
 
-const ROLES = ['admin', 'sales', 'delivery', 'service'];
+const ROLES = ['admin', 'sales', 'delivery', 'service', 'finance', 'expense', 'inventory', 'gift_box', 'delivery_manager'];
 const ROLE_COLORS = {
     admin: { bg: '#EEF2FF', color: '#4338CA', label: '👑 Admin' },
     sales: { bg: '#FFF7ED', color: '#c2410c', label: '🛒 Sales' },
     delivery: { bg: '#F0FDF4', color: '#15803d', label: '🚚 Delivery' },
     service: { bg: '#EFF6FF', color: '#1d4ed8', label: '🔧 Service' },
+    finance: { bg: '#FEFCE8', color: '#854d0e', label: '💸 Finance' },
+    expense: { bg: '#FEF2F2', color: '#991b1b', label: '📉 Expense' },
+    inventory: { bg: '#F8FAFC', color: '#334155', label: '📦 Inventory' },
+    gift_box: { bg: '#FAF5FF', color: '#6b21a8', label: '🎁 Gift Box' },
+    delivery_manager: { bg: '#ECFEFF', color: '#0e7490', label: '🚚 Logistics Admin' },
 };
 
 window.StaffManagement = () => {

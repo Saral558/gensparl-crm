@@ -313,40 +313,25 @@
     <script src="js/supabase-client.js"></script>
     <script src="app.js"></script>
 
-    <!-- Auto-Redirect and Login Logic -->
     <script>
         // Initialize Lucide Icons
         lucide.createIcons();
 
-        // Clean URL cosmetically! Prevents 'index.html' from showing up in url bar if someone typed it.
+        // Clean URL cosmetically
         if (window.location.pathname.endsWith('index.html')) {
             window.history.replaceState(null, '', window.location.pathname.replace('index.html', ''));
         }
 
-        // Check if user is already logged in for Auto-Redirection
-        const userData = localStorage.getItem('currentUser');
-        if (userData) {
-            try {
-                const user = JSON.parse(userData);
-                if (user && user.role) {
-                    // Normalize legacy roles from cache automatically
-                    let normalizedRole = user.role;
-                    if (['sales', 'service', 'finance', 'expense', 'inventory'].includes(normalizedRole)) {
-                        normalizedRole = 'staff';
-                    } else if (normalizedRole === 'delivery' || normalizedRole === 'delivery_manager') {
-                        normalizedRole = 'delivery_boy';
-                    }
-
-                    const routeMap = {
-                        admin: "ADMIN/index.html",
-                        staff: "sales.html",
-                        delivery_boy: "delivery_boy.html"
-                    };
-                    const targetUrl = routeMap[normalizedRole] || "index.html";
-                    if (targetUrl !== "index.html") window.location.replace(targetUrl);
-                }
-            } catch (e) { console.error("Session parse error", e); }
+        // Secure Auto-Redirect on Page Load
+        async function init() {
+            // checkAuth() will verify the real Supabase session. 
+            // If valid, it redirects to the correct role-based dashboard automatically.
+            const user = await checkAuth();
+            if (user) {
+                redirectByRole(user);
+            }
         }
+        init();
 
         // Allow Enter key to submit
         document.addEventListener('keydown', function (e) {
@@ -355,91 +340,12 @@
 
         function showStatus(msg, type = 'error') {
             const el = document.getElementById('statusMsg');
+            if (!el) { alert(msg); return; }
             el.textContent = msg;
             el.className = type;
             el.style.display = 'block';
         }
-
-        // Standalone login function (fully self-contained)
-        window.login = async function () {
-            const btn = document.getElementById('loginBtn');
-            const id = document.getElementById('id').value.trim();
-            const pass = document.getElementById('password').value;
-
-            if (!id || !pass) {
-                showStatus('⚠️ Please enter both ID and Password');
-                return;
-            }
-
-            if (!window.supabase) {
-                showStatus('⚠️ Database connection failed. Please refresh the page.', 'error');
-                return;
-            }
-
-            btn.textContent = 'Authenticating...';
-            btn.disabled = true;
-            document.getElementById('statusMsg').style.display = 'none';
-
-            const email = `${id}@dineshcrm.com`;
-
-            try {
-                let { data: authData, error: authError } = await window.supabase.auth.signInWithPassword({ email, password: pass });
-                let profile = null;
-
-                if (authError) {
-                    // Fallback: check profiles table directly (migration/dev mode)
-                    const { data: fallbackProfile, error: fallbackError } = await window.supabase
-                        .from('profiles').select('*').eq('staff_id', id).single();
-
-                    if (fallbackError || !fallbackProfile || pass !== '123123') {
-                        showStatus('❌ Invalid ID or password', 'error');
-                        btn.textContent = 'Access Dashboard';
-                        btn.disabled = false;
-                        return;
-                    }
-                    profile = fallbackProfile;
-                    authData = { user: { id: profile.id, email: profile.email } };
-                } else {
-                    const { data: syncProfile } = await window.supabase
-                        .from('profiles').select('*').eq('id', authData.user.id).single();
-                    profile = syncProfile;
-                }
-
-                // 🚀 AUTO-UPGRADE LEGACY ROLES TO NEW RBAC TIERS LIVE
-                let normalizedRole = profile?.role || 'staff';
-                if (['sales', 'service', 'finance', 'expense', 'inventory'].includes(normalizedRole)) {
-                    normalizedRole = 'staff';
-                } else if (normalizedRole === 'delivery' || normalizedRole === 'delivery_manager') {
-                    normalizedRole = 'delivery_boy';
-                }
-
-                const sessionUser = {
-                    id: profile?.id || authData?.user?.id,
-                    staffId: profile?.staff_id || id,
-                    role: normalizedRole,
-                    name: profile?.name || (authData?.user?.email ? authData.user.email.split('@')[0] : 'User')
-                };
-
-                localStorage.setItem('currentUser', JSON.stringify(sessionUser));
-
-                const routeMap = {
-                    admin: 'ADMIN/index.html',
-                    staff: 'sales.html',
-                    delivery_boy: 'delivery_boy.html'
-                };
-
-                showStatus('✓ Login successful! Redirecting...', 'info');
-                setTimeout(() => {
-                    window.location.href = routeMap[sessionUser.role] || 'index.html';
-                }, 600);
-
-            } catch (err) {
-                console.error('Login Error:', err);
-                showStatus('⚠️ System error: ' + err.message, 'error');
-                btn.textContent = 'Access Dashboard';
-                btn.disabled = false;
-            }
-        };
+    </script>
     </script>
 
     <script>

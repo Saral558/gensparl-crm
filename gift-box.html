@@ -9,7 +9,6 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="css/theme.css">
-  <script src="js/ui/navigation.js"></script>
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .bill-no-text { font-family: monospace; font-size: 13px; color: var(--text-muted); }
@@ -107,7 +106,7 @@
                 <i data-lucide="image"></i> Gallery
               </button>
             </div>
-            </input type="file" id="img-camera" class="hidden" accept="image/*" capture="environment" onchange="handleImage(this)" title="Capture Gift Photo">
+            <input type="file" id="img-camera" class="hidden" accept="image/*" onchange="previewPhoto(this)" title="Capture Gift Photo">
             <input type="file" id="gGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Gallery input">
           </div>
         </div>
@@ -159,29 +158,35 @@
         <i data-lucide="gift"></i>
         Gifts
       </a>
-      <a href="profile.html" class="nav-item" title="Profile">
-        <i data-lucide="user"></i>
-        Profile
-      </a>
+      <button class="nav-item nav-logout-btn" onclick="logout()" title="Sign Out">
+        <i data-lucide="log-out"></i>
+        Sign Out
+      </button>
     </nav>
   </div>
 
   <script src="js/supabase-client.js"></script>
   <script src="app.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const camInput = document.getElementById('gCamera');
-      if (camInput) camInput.setAttribute('capture', 'environment');
-    });
-
     let selectedFile = null;
-    const user = checkAuth('crm');
-    if (user) {
+    async function init() {
+      const user = await checkAuth('gift_box');
+      if (!user) return;
+
       window._supabase = window.supabase;
       document.getElementById('user-name').textContent = user.name;
       document.getElementById('user-avatar').textContent = user.name.charAt(0);
-      loadRecords();
+      
+      const camInput = document.getElementById('img-camera');
+      if (camInput) camInput.setAttribute('capture', 'environment');
+
+      lucide.createIcons();
+      loadRecords(user);
+      
+      // Submit listener
+      document.getElementById('giftForm').addEventListener('submit', (e) => submitGift(e, user));
     }
+    init();
 
     function previewPhoto(input) {
       if (input.files[0]) {
@@ -189,11 +194,15 @@
         const preview = document.getElementById('photoPreview');
         preview.src = URL.createObjectURL(selectedFile);
         preview.classList.remove('hidden');
-        preview.classList.add('block');
+        preview.style.display = 'block';
       }
     }
 
-    async function submitGift(e) {
+    function handleImage(input) {
+      previewPhoto(input);
+    }
+
+    async function submitGift(e, user) {
       e.preventDefault();
       if (!selectedFile) {
         alert("❌ Photo proof zaroori hai!");
@@ -224,16 +233,21 @@
           preview.classList.add('hidden');
           preview.classList.remove('block');
           selectedFile = null;
-          loadRecords();
+          loadRecords(user);
         }
       } catch (err) { alert("Error: " + err.message); }
       btn.textContent = 'Save Gift Entry';
     }
 
-    async function loadRecords() {
+    async function loadRecords(user) {
       try {
-        if (!window._supabase) return;
-        const { data, error } = await window._supabase.from('gifts').select('*').order('created_at', { ascending: false }).limit(20);
+        if (!window._supabase || !user) return;
+        const { data, error } = await window._supabase
+          .from('gifts')
+          .select('*')
+          .eq('staff_id', user.staffId)
+          .order('created_at', { ascending: false })
+          .limit(20);
         if (error) return;
         const tbody = document.getElementById('giftTable');
         if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="no-records-cell">No records</td></tr>'; return; }

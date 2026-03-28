@@ -10,7 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="css/theme.css">
-  <script src="js/ui/navigation.js"></script>
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .stat-blue { color: var(--info); }
@@ -63,9 +62,14 @@
         <span class="stat-lbl">Total Entries</span>
       </div>
       <div class="stat-glass">
-        <i data-lucide="banknote" class="icon-20 icon-success"></i>
-        <span class="stat-val stat-success-text" id="totalAmount">₹0</span>
-        <span class="stat-lbl">Total Amount</span>
+        <i data-lucide="calendar" class="icon-20 icon-accent"></i>
+        <span class="stat-val" id="todaySales">0</span>
+        <span class="stat-lbl">Today's Sales</span>
+      </div>
+      <div class="stat-glass">
+        <i data-lucide="credit-card" class="icon-20 icon-warning"></i>
+        <span class="stat-val" id="totalFinance">0</span>
+        <span class="stat-lbl">Finance Cases</span>
       </div>
     </div>
 
@@ -141,7 +145,7 @@
             </button>
           </div>
           <label for="sCamera" class="hidden">Camera Upload</label>
-          </input type="file" id="sCamera" accept="image/*" class="hidden" capture="environment" onchange="previewPhoto(this)" title="Capture Sales Proof">
+          <input type="file" id="sCamera" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Capture Sales Proof">
           <label for="sGallery" class="hidden">Gallery Upload</label>
           <input type="file" id="sGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Choose from Gallery">
         </div>
@@ -183,10 +187,10 @@
         <i data-lucide="badge-dollar-sign"></i>
         Sales
       </a>
-      <a href="profile.html" class="nav-item" title="Profile">
-        <i data-lucide="user"></i>
-        Profile
-      </a>
+      <button class="nav-item nav-logout-btn" onclick="logout()" title="Sign Out">
+        <i data-lucide="log-out"></i>
+        Sign Out
+      </button>
     </nav>
   </div>
 
@@ -194,22 +198,28 @@
   <script src="js/supabase-client.js"></script>
   <script src="app.js"></script>
   <script>
-    // Canonical CheckAuth
-    const user = checkAuth('sales');
-    if (user) {
+    async function init() {
+      const user = await checkAuth('sales');
+      if (!user) return; // checkAuth handles redirection
+
       window._supabase = window.supabase;
       document.getElementById('user-name').textContent = user.name;
       document.getElementById('user-avatar').textContent = user.name.charAt(0);
-      
+
       const camInput = document.getElementById('sCamera');
       if (camInput) camInput.setAttribute('capture', 'environment');
 
-      loadData();
+      lucide.createIcons();
+      loadData(user);
+      
+      // Submit listener
+      document.getElementById('saleForm').addEventListener('submit', (e) => submitSale(e, user));
     }
+    init();
 
     let selectedFile = null;
 
-    function previewImg(input) {
+    function previewPhoto(input) {
       if (input.files && input.files[0]) {
         selectedFile = input.files[0];
         const preview = document.getElementById('photoPreview');

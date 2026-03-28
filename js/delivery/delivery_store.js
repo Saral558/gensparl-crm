@@ -7,13 +7,17 @@ const DeliveryStore = {
      * getAll()
      * Fetches all orders accessible to the current user (filtered by RLS).
      */
-    async getAll() {
+    async getAll(deliveryBoyId = null) {
         const client = window.supabase;
         if (!client) return [];
         try {
-            const { data, error } = await client.from('orders')
-                .select('*')
-                .order('created_at', { ascending: false });
+            let query = client.from('orders').select('*');
+            
+            if (deliveryBoyId) {
+                query = query.eq('delivery_boy_id', deliveryBoyId);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
             
             if (error) throw error;
             
@@ -106,7 +110,7 @@ const DeliveryStore = {
      * pickOrder(orderId)
      * Delivery boy marks order as picked up.
      */
-    async pickOrder(orderId) {
+    async pickOrder(orderId, deliveryBoyId) {
         const client = window.supabase;
         if (!client) return { error: "No Supabase" };
 
@@ -114,6 +118,7 @@ const DeliveryStore = {
             const { data, error } = await client.from('orders')
                 .update({ status: 'picked' })
                 .eq('order_id', orderId)
+                .eq('delivery_boy_id', deliveryBoyId)
                 .select();
 
             if (error) throw error;
@@ -128,7 +133,7 @@ const DeliveryStore = {
      * completeOrder(orderId)
      * Delivery boy marks order as delivered.
      */
-    async completeOrder(orderId) {
+    async completeOrder(orderId, deliveryBoyId) {
         const client = window.supabase;
         if (!client) return { error: "No Supabase" };
 
@@ -139,6 +144,7 @@ const DeliveryStore = {
                     delivered_time: new Date().toISOString()
                 })
                 .eq('order_id', orderId)
+                .eq('delivery_boy_id', deliveryBoyId)
                 .select();
 
             if (error) throw error;

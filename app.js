@@ -5,15 +5,27 @@ if (window.location.pathname.endsWith('.html') && !window.location.pathname.ends
 
 // 🛡️ ROLE-BASED ACCESS CONTROL (RBAC) CONFIG
 const ROLE_PERMISSIONS = {
-  admin: ['sales', 'inventory', 'delivery', 'service', 'finance', 'expense', 'gifts', 'admin'],
-  staff: ['sales', 'service'],
-  delivery_boy: ['delivery']
+  admin: ['sales', 'inventory', 'delivery', 'service', 'finance', 'expense', 'gifts', 'admin', 'delivery_manager'],
+  sales: ['sales'],
+  service: ['service'],
+  delivery: ['delivery'],
+  finance: ['finance'],
+  expense: ['expense'],
+  inventory: ['inventory'],
+  delivery_manager: ['delivery_manager'],
+  gift_box: ['gift_box']
 };
 
 const ROLE_DEFAULT_ROUTES = {
   admin: 'ADMIN/index.html',
-  staff: 'sales.html',
-  delivery_boy: 'delivery_boy.html'
+  sales: 'sales.html',
+  service: 'service.html',
+  delivery: 'delivery_boy.html',
+  finance: 'finance.html',
+  expense: 'expense.html',
+  inventory: 'inventory.html',
+  delivery_manager: 'ADMIN/delivery_admin.html',
+  gift_box: 'gift-box.html'
 };
 
 window.ROLE_PERMISSIONS = ROLE_PERMISSIONS;
@@ -21,120 +33,132 @@ window.ROLE_DEFAULT_ROUTES = ROLE_DEFAULT_ROUTES;
 
 // 🔐 LOGIN FUNCTION (Hardened Supabase Auth)
 async function login() {
-  const btn = document.querySelector('button');
-  const idValue = document.getElementById("id").value;
-  const pass = document.getElementById("password").value;
+    const btn = document.querySelector('button');
+    const idValue = document.getElementById("id").value.trim();
+    const pass = document.getElementById("password").value;
 
-  if (!idValue || !pass) {
-    alert("Please enter both ID and Password");
-    return;
-  }
-
-  btn.innerText = "Authenticating...";
-  btn.disabled = true;
-
-  try {
-    // 1. Derive synthetic email for Supabase Auth
-    const email = `${idValue}@dineshcrm.com`;
-
-    // 2. Perform Supabase Sign-In
-    let { data: authData, error: authError } = await window.supabase.auth.signInWithPassword({
-      email: email,
-      password: pass
-    });
-
-    let profile = null;
-
-    if (authError) {
-      console.warn("Supabase Auth failed, attempting profile fallback...");
-      
-      // Fallback to Profile-only check for migration/dev phase
-      const { data: fallbackProfile, error: fallbackError } = await window.supabase
-        .from('profiles')
-        .select('*')
-        .eq('staff_id', idValue)
-        .single();
-
-      if (fallbackError || !fallbackProfile || pass !== '123123') {
-        alert("Invalid Login: " + authError.message);
+    if (!idValue || !pass) {
+        alert("Please enter both ID and Password");
         return;
-      }
-      
-      console.log("⚡ Logged in via Migration Fallback");
-      profile = fallbackProfile;
-      authData = { user: { id: profile.id, email: profile.email } };
-    } else {
-      // If Auth succeeded, verify/sync profile
-      const { data: syncProfile, error: sympError } = await window.supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .maybeSingle();
-      
-      profile = syncProfile;
     }
 
-    if (!profile) {
-      console.warn("Profile not found, using defaults");
+    btn.innerText = "Authenticating...";
+    btn.disabled = true;
+
+    try {
+        const email = `${idValue}@dineshcrm.com`;
+
+        // 1. Perform Supabase Sign-In (Direct Auth Only)
+        let { data: authData, error: authError } = await window.supabase.auth.signInWithPassword({
+            email: email,
+            password: pass
+        });
+
+        if (authError) {
+            console.error("Auth Error:", authError.message);
+            alert("Login Failed: Invalid credentials.");
+            return;
+        }
+
+        // 2. Fetch Verified Profile
+        const { data: profile, error: profileError } = await window.supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authData.user.id)
+            .single();
+
+        if (profileError || !profile) {
+            await window.supabase.auth.signOut();
+            alert("Error: Profile not found. Access denied.");
+            return;
+        }
+
+        // 3. Map to CRM session object
+        const sessionUser = {
+            id: profile.id,
+            staffId: profile.staff_id,
+            role: profile.role || 'sales',
+            name: profile.name,
+            avatar: profile.avatar_url || null
+        };
+
+        localStorage.setItem("currentUser", JSON.stringify(sessionUser));
+
+        // 4. Route strictly
+        redirectByRole(sessionUser);
+
+    } catch (err) {
+        console.error("Critical Login Error:", err);
+        alert("A system error occurred. Access restricted.");
+    } finally {
+        btn.innerText = "Access Dashboard";
+        btn.disabled = false;
     }
-
-    // 🚀 AUTO-UPGRADE LEGACY ROLES TO NEW RBAC TIERS
-    let normalizedRole = profile?.role || 'staff';
-    if (['sales', 'service', 'finance', 'expense', 'inventory'].includes(normalizedRole)) {
-        normalizedRole = 'staff';
-    } else if (normalizedRole === 'delivery' || normalizedRole === 'delivery_manager') {
-        normalizedRole = 'delivery_boy';
-    }
-
-    // 4. Map to CRM session object
-    const sessionUser = {
-      id: profile?.id || (authData?.user?.id),
-      staffId: profile?.staff_id || idValue,
-      role: normalizedRole,
-      name: profile?.name || (authData?.user?.email ? authData.user.email.split('@')[0] : 'User'),
-      avatar: profile?.avatar_url || null,
-      about: profile?.about || ''
-    };
-
-    localStorage.setItem("currentUser", JSON.stringify(sessionUser));
-    
-    // 5. Route strictly according to RBAC layout
-    window.location.href = ROLE_DEFAULT_ROUTES[sessionUser.role] || "index.html";
-
-  } catch (err) {
-    console.error("Critical Login Error:", err);
-    alert("A system error occurred during login.");
-  } finally {
-    btn.innerText = "Access Dashboard";
-    btn.disabled = false;
-  }
 }
 
-// 🔒 PROTECT PAGES
-function checkAuth(requiredModule) {
-  const user = JSON.parse(localStorage.getItem("currentUser"));
-  const rootPath = window.location.pathname.includes('/ADMIN/') || window.location.pathname.includes('\\ADMIN\\') ? '../' : '';
+// 📐 ROUTE HELPER
+function redirectByRole(user) {
+    const rootPath = window.location.pathname.includes('/ADMIN/') || window.location.pathname.includes('\\ADMIN\\') ? '../' : '';
+    const route = ROLE_DEFAULT_ROUTES[user.role] || "index.html";
+    window.location.href = rootPath + route;
+}
 
-  if (!user) {
-    window.location.href = rootPath + "index.html";
-    return null;
-  }
-
-  // Admin override automatically has full access in fallback case, but RBAC is safe
-  const authorizedModules = window.ROLE_PERMISSIONS[user.role] || [];
-  
-  if (requiredModule && !authorizedModules.includes(requiredModule)) {
-    if (user.role !== 'admin') {
-       alert("Unauthorized Access Attempt");
-       window.location.href = rootPath + "index.html";
-       return null;
+// 🔒 PROTECT PAGES (Asynchronous and Database Verified)
+async function checkAuth(requiredModule) {
+    const rootPath = window.location.pathname.includes('/ADMIN/') || window.location.pathname.includes('\\ADMIN\\') ? '../' : '';
+    
+    // 1. Check if token exists
+    const { data: { user: authUser }, error: authError } = await window.supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+        console.warn("No active session or session expired.");
+        logout();
+        return null;
     }
-  }
 
-  if (document.getElementById("userRole")) {
-    document.getElementById("userRole").innerText = user.role.toUpperCase();
-  }
-  return user;
+    // 2. Fetch role from source of truth (Database)
+    const { data: profile, error: profileError } = await window.supabase
+        .from('profiles')
+        .select('role, name, staff_id, avatar_url')
+        .eq('id', authUser.id)
+        .single();
+
+    if (profileError || !profile) {
+        console.error("Security breach: No profile found for authenticated user.");
+        logout();
+        return null;
+    }
+
+    // 3. Verify Permissions
+    const authorizedModules = ROLE_PERMISSIONS[profile.role] || [];
+    if (requiredModule && !authorizedModules.includes(requiredModule)) {
+        console.warn(`Access denied for ${profile.role} on ${requiredModule}`);
+        // If user is logged in but on the wrong page, redirect them to THEIR correct home
+        redirectByRole(profile);
+        return null;
+    }
+
+    // 4. Update UI Components
+    if (document.getElementById("userRole")) {
+        document.getElementById("userRole").innerText = profile.role.toUpperCase();
+    }
+    
+    if (document.querySelector(".online-badge")) {
+        const badge = document.querySelector(".online-badge");
+        const formatRole = profile.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        badge.innerHTML = `<div class="status-dot"></div> Online &nbsp;•&nbsp; <span style="color:var(--primary); font-weight:800; letter-spacing:0.5px;">[ ${formatRole} ]</span>`;
+    }
+
+    // Sync localStorage for UI display purposes (Name, Avatar)
+    localStorage.setItem("currentUser", JSON.stringify({
+        id: profile.id,
+        staffId: profile.staff_id,
+        role: profile.role,
+        name: profile.name,
+        avatar: profile.avatar_url
+    }));
+    
+    return profile;
 }
 window.checkAuth = checkAuth;
 window.login = login;
@@ -207,9 +231,14 @@ window.crmUtils = crmUtils;
 window.utils = crmUtils;
 
 // 🚪 LOGOUT
-function logout() {
-  localStorage.removeItem("currentUser");
-  const rootPath = window.location.pathname.includes('/ADMIN/') || window.location.pathname.includes('\\ADMIN\\') ? '../' : '';
-  window.location.href = rootPath + "index.html"; 
+async function logout() {
+    const rootPath = window.location.pathname.includes('/ADMIN/') || window.location.pathname.includes('\\ADMIN\\') ? '../' : '';
+    try {
+        await window.supabase.auth.signOut();
+    } catch (e) {
+        console.warn("Sign out err:", e);
+    }
+    localStorage.clear();
+    window.location.href = rootPath + "index.html"; 
 }
 

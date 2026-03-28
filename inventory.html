@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="css/theme.css">
-  <script src="js/ui/navigation.js"></script>
+  <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .item-card {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -161,10 +161,10 @@
         <i data-lucide="box"></i>
         Inventory
       </a>
-      <a href="profile.html" class="nav-item" title="Profile">
-        <i data-lucide="user"></i>
-        Profile
-      </a>
+      <button class="nav-item nav-logout-btn" onclick="logout()" title="Sign Out">
+        <i data-lucide="log-out"></i>
+        Sign Out
+      </button>
     </nav>
   </div>
 
@@ -172,12 +172,16 @@
   <script src="js/supabase-client.js"></script>
   <script src="app.js"></script>
   <script>
-    const user = checkAuth();
-    if (user) {
+    async function init() {
+      const user = await checkAuth('inventory');
+      if (!user) return;
+
       document.getElementById('user-name').textContent = user.name;
       document.getElementById('user-avatar').textContent = user.name.charAt(0);
-      loadInventory();
+      lucide.createIcons();
+      loadInventory(user);
     }
+    init();
 
       function openModal(id) {
         const modal = document.getElementById(id);
@@ -185,11 +189,12 @@
       }
       function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-      async function loadInventory() {
+      async function loadInventory(user) {
         const grid = document.getElementById('inventoryGrid');
         grid.innerHTML = '<div class="grid-loading"><div class="spinner"></div><div>Loading inventory...</div></div>';
 
         try {
+          if (!user) return;
           const { data, error } = await window.supabase
             .from('staff_inventory')
             .select('*')
@@ -280,7 +285,7 @@
 
           closeModal('addModal');
           e.target.reset();
-          loadInventory();
+          loadInventory(user);
         } catch (err) {
           alert("Error adding item: " + err.message);
         } finally {
@@ -311,12 +316,13 @@
           const { error } = await window.supabase
             .from('staff_inventory')
             .update({ stock_quantity: qty })
-            .eq('id', id);
+            .eq('id', id)
+            .eq('staff_id', user.id); // Security: only update your own
 
           if (error) throw error;
 
           closeModal('updateModal');
-          loadInventory();
+          loadInventory(user);
 
           // Check for low stock alert after update
           if (qty < 20) {

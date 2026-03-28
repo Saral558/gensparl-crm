@@ -7,7 +7,8 @@
     <meta name="description" content="Gensparl CRM - Professional Delivery Staff Dashboard.">
     <title>Delivery Dashboard — Gensparl</title>
     <link rel="stylesheet" href="css/theme.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
@@ -106,9 +107,20 @@
         }
 
         @keyframes pulse-green {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.4); opacity: 0.6; }
-            100% { transform: scale(1); opacity: 1; }
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.4);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         /* --- Stats --- */
@@ -152,7 +164,9 @@
             font-weight: 600;
         }
 
-        .stat-success-text { color: var(--success); }
+        .stat-success-text {
+            color: var(--success);
+        }
 
         /* --- Tabs --- */
         .tab-nav-modern {
@@ -180,7 +194,7 @@
         .tab-btn.active {
             background: white;
             color: #0f172a;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         /* --- Task Cards --- */
@@ -197,11 +211,21 @@
             border-left-width: 4px;
         }
 
-        .task-card-pro:active { transform: scale(0.98); }
+        .task-card-pro:active {
+            transform: scale(0.98);
+        }
 
-        .task-card-pro.assigned { border-left-color: var(--info); }
-        .task-card-pro.picked { border-left-color: var(--warning); }
-        .task-card-pro.delivered { border-left-color: var(--success); }
+        .task-card-pro.assigned {
+            border-left-color: var(--info);
+        }
+
+        .task-card-pro.picked {
+            border-left-color: var(--warning);
+        }
+
+        .task-card-pro.delivered {
+            border-left-color: var(--success);
+        }
 
         .card-top {
             display: flex;
@@ -213,7 +237,7 @@
             font-family: monospace;
             font-size: 12px;
             color: var(--text-muted);
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             padding: 2px 8px;
             border-radius: 4px;
         }
@@ -241,7 +265,9 @@
             line-height: 1.4;
         }
 
-        .addr-icon { width: 14px; }
+        .addr-icon {
+            width: 14px;
+        }
 
         .cash-tag {
             background: rgba(245, 158, 11, 0.1);
@@ -268,7 +294,7 @@
         }
 
         .item-pill {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             padding: 4px 10px;
             border-radius: 6px;
             font-size: 11px;
@@ -276,7 +302,9 @@
             color: var(--text-secondary);
         }
 
-        .chevron-icon { color: var(--accent); }
+        .chevron-icon {
+            color: var(--accent);
+        }
 
         /* --- Modal Redesign --- */
         .workflow-modal {
@@ -291,7 +319,7 @@
             padding: 32px;
             border: 1px solid var(--border);
             border-bottom: none;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
         }
 
         .modal-drag-handle {
@@ -349,7 +377,7 @@
         }
 
         .checklist-container {
-            background: rgba(255,255,255,0.03);
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 24px;
@@ -396,7 +424,9 @@
             transition: all 0.2s;
         }
 
-        .camera-trigger:active { background: rgba(99, 102, 241, 0.1); }
+        .camera-trigger:active {
+            background: rgba(99, 102, 241, 0.1);
+        }
 
         .camera-icon-large {
             width: 40px;
@@ -405,8 +435,16 @@
             margin-bottom: 12px;
         }
 
-        .proof-hint-main { font-size: 14px; font-weight: 700; }
-        .proof-hint-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+        .proof-hint-main {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .proof-hint-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
 
         .proof-preview-img {
             width: 100%;
@@ -415,7 +453,9 @@
             margin-bottom: 12px;
         }
 
-        .modal-footer-actions { margin-top: 32px; }
+        .modal-footer-actions {
+            margin-top: 32px;
+        }
 
         .btn-confirm-ready {
             background: var(--success);
@@ -429,11 +469,16 @@
             margin-top: 12px;
         }
 
-        .hidden { display: none !important; }
+        .hidden {
+            display: none !important;
+        }
 
         .overlay {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: rgba(0, 0, 0, 0.6);
             -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px);
@@ -453,7 +498,9 @@
         /* --- Mobile Bottom Nav --- */
         .bottom-nav {
             position: fixed;
-            bottom: 0; left: 0; right: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
             background: rgba(15, 23, 42, 0.85);
             -webkit-backdrop-filter: blur(20px);
             backdrop-filter: blur(20px);
@@ -475,12 +522,28 @@
             text-decoration: none;
         }
 
-        .nav-item.active { color: var(--accent); }
-        .nav-item i { width: 24px; height: 24px; }
+        .nav-item.active {
+            color: var(--accent);
+        }
 
-        .spin { animation: fa-spin 1s infinite linear; }
-        @keyframes fa-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .nav-item i {
+            width: 24px;
+            height: 24px;
+        }
 
+        .spin {
+            animation: fa-spin 1s infinite linear;
+        }
+
+        @keyframes fa-spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
@@ -508,21 +571,23 @@
         </header>
 
         <div class="stats-row">
-        <div class="stat-glass">
-            <i data-lucide="package" class="icon-20 icon-info"></i>
-            <span class="stat-val" id="pendingCount">0</span>
-            <span class="stat-lbl">Pending</span>
+            <div class="stat-glass">
+                <i data-lucide="package" class="icon-20 icon-info"></i>
+                <span class="stat-val" id="pendingCount">0</span>
+                <span class="stat-lbl">Pending</span>
+            </div>
+            <div class="stat-glass">
+                <i data-lucide="check-circle" class="icon-20 icon-success"></i>
+                <span class="stat-val stat-success-text" id="deliveredCount">0</span>
+                <span class="stat-lbl">Delivered</span>
+            </div>
         </div>
-        <div class="stat-glass">
-            <i data-lucide="check-circle" class="icon-20 icon-success"></i>
-            <span class="stat-val stat-success-text" id="deliveredCount">0</span>
-            <span class="stat-lbl">Delivered</span>
-        </div>
-    </div>
 
         <div class="tab-nav-modern">
-            <button class="tab-btn active" data-tab="active" onclick="switchTab('active', this)" title="Show Pending Deliveries">To-Do</button>
-            <button class="tab-btn" data-tab="history" onclick="switchTab('history', this)" title="Show Completed Deliveries">History</button>
+            <button class="tab-btn active" data-tab="active" onclick="switchTab('active', this)"
+                title="Show Pending Deliveries">To-Do</button>
+            <button class="tab-btn" data-tab="history" onclick="switchTab('history', this)"
+                title="Show Completed Deliveries">History</button>
         </div>
 
         <div id="active-list" class="tab-content active"></div>
@@ -539,10 +604,10 @@
             <i data-lucide="truck"></i>
             Tasks
         </a>
-        <a href="profile.html" class="nav-item" title="View Profile">
-            <i data-lucide="user"></i>
-            Profile
-        </a>
+        <button class="nav-item nav-logout-btn" onclick="logout()" title="Sign Out">
+            <i data-lucide="log-out"></i>
+            Sign Out
+        </button>
     </nav>
 
     <!-- Execution Backdrop -->
@@ -572,16 +637,19 @@
             <div id="exec-checklist" class="checklist-container"></div>
 
             <div id="proof-section" class="hidden">
-                <div class="camera-trigger" id="proof-placeholder" onclick="document.getElementById('img-camera').click()" title="Capture Delivery Proof">
+                <div class="camera-trigger" id="proof-placeholder"
+                    onclick="document.getElementById('img-camera').click()" title="Capture Delivery Proof">
                     <i data-lucide="camera" class="camera-icon-large"></i>
                     <p class="proof-hint-main">Take Delivery Proof</p>
                     <p class="proof-hint-sub">Photo is mandatory for completion</p>
                 </div>
                 <div id="preview-box" class="hidden">
                     <img id="proof-preview" class="proof-preview-img" alt="Delivery Proof Preview">
-                    <button class="btn btn-outline btn-danger" onclick="resetPhoto()" title="Retake Photo">Retake Photo</button>
+                    <button class="btn btn-outline btn-danger" onclick="resetPhoto()" title="Retake Photo">Retake
+                        Photo</button>
                 </div>
-                </input type="file" id="img-camera" class="hidden" accept="image/*" capture="environment" onchange="handleImage(this)" title="Proof Camera">
+                <input type="file" id="img-camera" class="hidden" accept="image/*" onchange="handleImage(this)"
+                    title="Proof Camera">
             </div>
 
             <div id="action-buttons" class="modal-footer-actions"></div>
@@ -592,31 +660,39 @@
     <script src="app.js"></script>
     <script src="js/delivery/delivery_store.js"></script>
     <script>
-        const user = checkAuth('delivery');
         let currentTab = 'active';
         let activeOrderId = null;
         let allOrders = [];
+        let user = null;
 
-        if (user) {
+        async function init() {
+            user = await checkAuth('delivery');
+            if (!user) return; // app.js handles redirect
+
             document.getElementById('user-name').innerText = user.name;
             document.getElementById('user-avatar').innerText = user.name.charAt(0);
-            refreshUI();
+
+            const camInput = document.getElementById('img-camera');
+            if (camInput) camInput.setAttribute('capture', 'environment');
+
+            await refreshUI();
             setInterval(refreshUI, 15000);
         }
+        init();
 
         async function refreshUI() {
             const icon = document.getElementById('refresh-icon');
             if (icon) icon.classList.add('spin');
 
             try {
-                allOrders = await DeliveryStore.getAll();
-                const myOrders = allOrders.filter(o => String(o.deliveryBoyId) === String(user.id));
+                // Fetch ONLY orders assigned to this user from DB (Hard Isolation)
+                allOrders = await DeliveryStore.getAll(user.id);
+                
+                const active = allOrders.filter(o => o.status === 'assigned' || o.status === 'picked');
+                const history = allOrders.filter(o => o.status === 'delivered');
 
-                const active = myOrders.filter(o => o.status === 'assigned' || o.status === 'picked');
-                const history = myOrders.filter(o => o.status === 'delivered');
-
-                document.getElementById('count-active').innerText = active.length;
-                document.getElementById('count-history').innerText = history.length;
+                document.getElementById('pendingCount').innerText = active.length;
+                document.getElementById('deliveredCount').innerText = history.length;
 
                 renderList('active-list', active);
                 renderList('history-list', history);
@@ -784,12 +860,12 @@
         }
 
         async function markPicked() {
-            const res = await DeliveryStore.pickOrder(activeOrderId);
+            const res = await DeliveryStore.pickOrder(activeOrderId, user.id);
             if (!res.error) { refreshUI(); openExecution(activeOrderId); }
         }
 
         async function markDone() {
-            const res = await DeliveryStore.completeOrder(activeOrderId);
+            const res = await DeliveryStore.completeOrder(activeOrderId, user.id);
             if (!res.error) { closeModal(); refreshUI(); }
         }
 
@@ -803,4 +879,5 @@
         function closeModal() { document.getElementById('execution-overlay').classList.add('hidden'); }
     </script>
 </body>
+
 </html>

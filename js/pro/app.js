@@ -273,7 +273,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <td><strong>${s.name}</strong><br><small>${s.staff_id || ''}</small></td>
                                     <td><span class="badge ${s.role}">${s.role.toUpperCase()}</span></td>
                                     <td><span class="status-pill active">${s.active ? 'Active' : 'Locked'}</span></td>
-                                    <td><button class="btn btn-outline btn-sm">Manage KPIs</button></td>
+                                    <td>
+                                        <button class="btn btn-outline btn-sm" onclick="editStaffName('${s.id}', '${s.name || ''}')">
+                                            <i data-lucide="edit-3" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i> Update Name
+                                        </button>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -418,4 +422,31 @@ document.addEventListener('DOMContentLoaded', () => {
             logout();
         });
     }
+
+    // --- GLOBAL ACTIONS ---
+    window.editStaffName = async (profileId, currentName) => {
+        const newName = prompt("Staff member ka naya naam darj karein (Enter new name for staff):", currentName);
+        if (newName && newName.trim() !== "" && newName !== currentName) {
+            try {
+                const { error } = await window.supabase
+                    .from('profiles')
+                    .update({ name: newName.trim() })
+                    .eq('id', profileId);
+                
+                if (error) throw error;
+                
+                alert("✓ Staff name updated successfully in database!");
+                
+                // Refresh records list
+                if (window.DataManager) {
+                    await window.DataManager.refreshAll();
+                    renderStaffPerformance();
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Failed to update staff name: " + err.message);
+            }
+        }
+    };
 });

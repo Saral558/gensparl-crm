@@ -11,7 +11,6 @@
     rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="css/theme.css">
-  <script src="js/ui/navigation.js"></script>
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -184,163 +183,181 @@
             </div>
             <label for="fCamera" class="hidden">Camera Upload</label>
             <input type="file" id="fCamera" accept="image/*" class="hidden-file-input" onchange="previewImg(this)"
-              title="Capture Finance Photo">
+              title="Capture Document Proof">
             <label for="fGallery" class="hidden">Gallery Upload</label>
             <input type="file" id="fGallery" accept="image/*" class="hidden-file-input" onchange="previewImg(this)"
               title="Choose from Gallery">
           </div>
-          <button type="submit" class="btn btn-primary" id="fSubmitBtn">Save Entry</button>
-      </form>
+        </div>
     </div>
+    <button type="submit" class="btn btn-primary w-full mt-20" id="fSubmitBtn">Save Finance Entry</button>
+    </form>
+  </div>
 
-    <div class="card glass animate-in animate-delay-2">
-      <div class="section-header">
-        <h2>Payment Ledger</h2>
-      </div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Customer & Staff</th>
-              <th>Finance Terms</th>
-              <th>DP (₹)</th>
-              <th>Loan (₹)</th>
-              <th>Status & Input</th>
-            </tr>
-          </thead>
-          <tbody id="financeTable">
-            <tr>
-              <td colspan="5" class="empty">Loading records...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+  <div class="card glass animate-in animate-delay-2">
+    <div class="section-header">
+      <h2>Payment Ledger</h2>
     </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Customer & Staff</th>
+            <th>Finance Terms</th>
+            <th>DP (₹)</th>
+            <th>Loan (₹)</th>
+            <th>Status & Input</th>
+          </tr>
+        </thead>
+        <tbody id="financeTable">
+          <tr>
+            <td colspan="5" class="empty">Loading records...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="js/supabase-client.js"></script>
-    <script src="app.js"></script>
-    <script>
-      const user = checkAuth('finance');
-      if (user) {
-        window._supabase = window.supabase;
-        document.getElementById('user-name').textContent = user.name;
-        document.getElementById('user-avatar').textContent = user.name.charAt(0);
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="app.js"></script>
+  <script>
+    async function init() {
+      const user = await checkAuth('finance');
+      if (!user) return;
 
-        const camInput = document.getElementById('fCamera');
-        if (camInput) camInput.setAttribute('capture', 'environment');
+      window._supabase = window.supabase;
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('user-avatar').textContent = user.name.charAt(0);
 
-        loadData();
+      const camInput = document.getElementById('fCamera');
+      if (camInput) camInput.setAttribute('capture', 'environment');
+
+      lucide.createIcons();
+      loadData(user);
+      
+      // Submit listener
+      document.getElementById('financeForm').addEventListener('submit', (e) => submitEntry(e, user));
+    }
+    init();
+
+    function calcDisbursement() {
+      const mop = parseFloat(document.getElementById('fMOP').value) || 0;
+      const dp = parseFloat(document.getElementById('fDP').value) || 0;
+      document.getElementById('fDisbursement').value = Math.max(0, mop - dp);
+    }
+
+    let selectedFile = null;
+
+    function previewImg(input) {
+      if (input.files && input.files[0]) {
+        selectedFile = input.files[0];
+        const preview = document.getElementById('photoPreview');
+        preview.src = URL.createObjectURL(selectedFile);
+        preview.style.display = 'block';
+      }
+    }
+
+    async function submitEntry(e, user) {
+      e.preventDefault();
+
+      if (!selectedFile) {
+        alert("❌ Error: Document/Approval Photo is mandatory. Please capture or upload a photo.");
+        return;
       }
 
-      function calcDisbursement() {
-        const mop = parseFloat(document.getElementById('fMOP').value) || 0;
-        const dp = parseFloat(document.getElementById('fDP').value) || 0;
-        document.getElementById('fDisbursement').value = Math.max(0, mop - dp);
-      }
+      const btn = document.getElementById('fSubmitBtn');
+      btn.textContent = 'Uploading Proof...';
+      btn.disabled = true;
 
-      let selectedFile = null;
+      try {
+        // 1. Upload Image
+        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'finance', user);
 
-      function previewImg(input) {
-        if (input.files && input.files[0]) {
-          selectedFile = input.files[0];
-          const preview = document.getElementById('photoPreview');
-          preview.src = URL.createObjectURL(selectedFile);
-          preview.style.display = 'block';
-        }
-      }
+        btn.textContent = 'Saving Record...';
 
-      async function submitEntry(e) {
-        e.preventDefault();
+        const mop_val = parseFloat(document.getElementById('fMOP').value) || 0;
+        const dp_val = parseFloat(document.getElementById('fDP').value) || 0;
 
-        if (!selectedFile) {
-          alert("❌ Error: Document/Approval Photo is mandatory. Please capture or upload a photo.");
+        const payload = {
+          customer_name: document.getElementById('fCustomer').value,
+          mobile_no: document.getElementById('fMobile').value,
+          finance_company: document.getElementById('fCompany').value,
+          salesboy_name: document.getElementById('fSalesboy').value,
+          mop_price: mop_val,
+          dp: dp_val,
+          emi_amount: parseFloat(document.getElementById('fEMI').value) || null,
+          dbd_charges: parseFloat(document.getElementById('fDBD').value) || 0,
+          loan_amount: Math.max(0, mop_val - dp_val),
+          due_amount: Math.max(0, mop_val - dp_val),
+          paid_amount: 0,
+          status: 'active',
+          image_url: imageUrl,
+          image_verified: false,
+          staff_id: user.staffId
+        };
+
+        if (!window._supabase) {
+          alert("Database not ready.");
           return;
         }
+        const { error } = await window._supabase.from('finance').insert([payload]);
+        if (error) throw error;
 
-        const btn = document.getElementById('fSubmitBtn');
-        btn.textContent = 'Uploading Proof...';
-        btn.disabled = true;
+        alert("✓ Finance entry saved successfully with proof!");
+        document.getElementById('financeForm').reset();
+        document.getElementById('photoPreview').style.display = 'none';
+        selectedFile = null;
+        loadData(user);
+      } catch (err) {
+        console.error("Finance Error:", err);
+        alert("Error: " + err.message);
+      } finally {
+        btn.textContent = 'Save Entry';
+        btn.disabled = false;
+      }
+    }
 
-        try {
-          // 1. Upload Image
-          const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'finance', user);
-
-          btn.textContent = 'Saving Record...';
-
-          const mop_val = parseFloat(document.getElementById('fMOP').value) || 0;
-          const dp_val = parseFloat(document.getElementById('fDP').value) || 0;
-
-          const payload = {
-            customer_name: document.getElementById('fCustomer').value,
-            mobile_no: document.getElementById('fMobile').value,
-            finance_company: document.getElementById('fCompany').value,
-            salesboy_name: document.getElementById('fSalesboy').value,
-            mop_price: mop_val,
-            dp: dp_val,
-            emi_amount: parseFloat(document.getElementById('fEMI').value) || null,
-            dbd_charges: parseFloat(document.getElementById('fDBD').value) || 0,
-            loan_amount: Math.max(0, mop_val - dp_val),
-            due_amount: Math.max(0, mop_val - dp_val),
-            paid_amount: 0,
-            status: 'active',
-            image_url: imageUrl,
-            image_verified: false
-          };
-
-          if (!window._supabase) {
-            alert("Database not ready.");
-            return;
-          }
-          const { error } = await window._supabase.from('finance').insert([payload]);
-          if (error) throw error;
-
-          alert("✓ Finance entry saved successfully with proof!");
-          document.getElementById('financeForm').reset();
-          document.getElementById('photoPreview').style.display = 'none';
-          selectedFile = null;
-          loadData();
-        } catch (err) {
-          console.error("Finance Error:", err);
-          alert("Error: " + err.message);
-        } finally {
-          btn.textContent = 'Save Entry';
-          btn.disabled = false;
+    async function updatePayment(id, user) {
+      const inputEl = document.getElementById('paid_' + id);
+      const newPaid = parseFloat(inputEl.value) || 0;
+      try {
+        if (!window._supabase || !user) return;
+        const { error } = await window._supabase
+          .from('finance')
+          .update({ paid_amount: newPaid })
+          .eq('id', id)
+          .eq('staff_id', user.staffId); // Security: only update your own
+        if (error) {
+          console.error("Update Error:", error);
+          alert("Failed: " + error.message);
+        } else {
+          loadData(user);
         }
-      }
+      } catch (e) { alert("Error connecting to database"); }
+    }
 
-      async function updatePayment(id) {
-        const inputEl = document.getElementById('paid_' + id);
-        const newPaid = parseFloat(inputEl.value) || 0;
-        try {
-          if (!window._supabase) return;
-          const { error } = await window._supabase.from('finance').update({ paid_amount: newPaid }).eq('id', id);
-          if (error) {
-            console.error("Update Error:", error);
-            alert("Failed: " + error.message);
-          } else {
-            loadData();
-          }
-        } catch (e) { alert("Error connecting to database"); }
-      }
+    async function loadData(user) {
+      try {
+        if (!window._supabase || !user) return;
+        const { data: records, error } = await window._supabase
+          .from('finance')
+          .select('*')
+          .eq('staff_id', user.staffId)
+          .order('created_at', { ascending: false });
+        if (error) return;
 
-      async function loadData() {
-        try {
-          if (!window._supabase) return;
-          const { data: records, error } = await window._supabase.from('finance').select('*').order('created_at', { ascending: false });
-          if (error) return;
-
-          let tDue = 0, tPaid = 0;
-          const tbody = document.getElementById('financeTable');
-          if (!records || records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty">No financial records yet</td></tr>';
-          } else {
-            tbody.innerHTML = records.map(r => {
-              const due = Number(r.due_amount || 0);
-              const paid = Number(r.paid_amount || 0);
-              tDue += due; tPaid += paid;
-              let statusHTML = paid >= due && due > 0 ? `<span class="status-pill status-normal">Paid</span>` : paid > 0 ? `<span class="status-pill status-warning">Partial</span>` : `<span class="status-pill status-low">Unpaid</span>`;
-              return `<tr>
+        let tDue = 0, tPaid = 0;
+        const tbody = document.getElementById('financeTable');
+        if (!records || records.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty">No financial records yet</td></tr>';
+        } else {
+          tbody.innerHTML = records.map(r => {
+            const due = Number(r.due_amount || 0);
+            const paid = Number(r.paid_amount || 0);
+            tDue += due; tPaid += paid;
+            let statusHTML = paid >= due && due > 0 ? `<span class="status-pill status-normal">Paid</span>` : paid > 0 ? `<span class="status-pill status-warning">Partial</span>` : `<span class="status-pill status-low">Unpaid</span>`;
+            return `<tr>
               <td><strong class="cust-name-text">${r.customer_name}</strong><br><span class="meta-text">${r.salesboy_name || 'N/A'}</span></td>
               <td><strong class="meta-text">${r.finance_company || 'N/A'}</strong><br><span class="meta-text">MOP: ₹${(Number(r.mop_price) || 0).toLocaleString('en-IN')}</span></td>
               <td class="meta-text">₹${(Number(r.dp) || 0).toLocaleString('en-IN')}</td>
@@ -349,35 +366,36 @@
                 <div style="display: flex; align-items: center; gap: 8px">
                   ${statusHTML}
                   <input type="number" id="paid_${r.id}" class="amount-input-small" value="${paid}" min="0">
-                  <button class="btn btn-primary" style="padding: 6px 10px; font-size: 11px; width: unset" onclick="updatePayment('${r.id}')">Sync</button>
+                  <button class="btn btn-primary" style="padding: 6px 10px; font-size: 11px; width: unset" onclick="updatePayment('${r.id}', { staffId: '${r.staff_id}' })">Sync</button>
                 </div>
               </td>
             </tr>`;
-            }).join('');
-          }
-          document.getElementById('totDue').textContent = '₹' + tDue.toLocaleString('en-IN');
-          document.getElementById('totPaid').textContent = '₹' + tPaid.toLocaleString('en-IN');
-          document.getElementById('totOut').textContent = '₹' + Math.max(0, tDue - tPaid).toLocaleString('en-IN');
-        } catch (e) { console.error('Load Error:', e); }
-      }
-    </script>
+          }).join('');
+        }
+        document.getElementById('totDue').textContent = '₹' + tDue.toLocaleString('en-IN');
+        document.getElementById('totPaid').textContent = '₹' + tPaid.toLocaleString('en-IN');
+        document.getElementById('totOut').textContent = '₹' + Math.max(0, tDue - tPaid).toLocaleString('en-IN');
+      } catch (e) { console.error('Load Error:', e); }
+    }
+  </script>
 
-    <!-- Bottom Nav -->
-    <nav class="bottom-nav">
-      <a href="index.html" class="nav-item" title="Home">
-        <i data-lucide="layout-grid"></i>
-        Home
-      </a>
-      <a href="#" class="nav-item active" title="Finance">
-        <i data-lucide="landmark"></i>
-        Finance
-      </a>
-      <a href="profile.html" class="nav-item" title="Profile">
-        <i data-lucide="user"></i>
-        Profile
-      </a>
-    </nav>
   </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item" title="Home">
+      <i data-lucide="layout-grid"></i>
+      Home
+    </a>
+    <a href="#" class="nav-item active" title="Finance">
+      <i data-lucide="landmark"></i>
+      Finance
+    </a>
+    <button class="nav-item nav-logout-btn" onclick="logout()" title="Sign Out">
+      <i data-lucide="log-out"></i>
+      Sign Out
+    </button>
+  </nav>
 
   <script>
     if ('serviceWorker' in navigator) {

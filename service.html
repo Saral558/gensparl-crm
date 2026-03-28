@@ -11,7 +11,6 @@
     rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="css/theme.css">
-  <script src="js/ui/navigation.js"></script>
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -160,8 +159,7 @@
               </button>
             </div>
             <label for="sCamera" class="hidden">Camera Upload</label>
-            <input type="file" id="sCamera" accept="image/*" class="hidden" onchange="previewPhoto(this)"
-              title="Capture Service Photo">
+            <input type="file" id="sCamera" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Capture Service Proof">
             <label for="sGallery" class="hidden">Gallery Upload</label>
             <input type="file" id="sGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)"
               title="Choose from Gallery">
@@ -194,6 +192,10 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
         <!-- Bottom Nav -->
         <nav class="bottom-nav">
           <a href="index.html" class="nav-item" title="Home">
@@ -204,32 +206,34 @@
             <i data-lucide="wrench"></i>
             Service
           </a>
-          <a href="profile.html" class="nav-item" title="Profile">
-            <i data-lucide="user"></i>
-            Profile
-          </a>
+          <button class="nav-item nav-logout-btn" onclick="logout()" title="Sign Out">
+            <i data-lucide="log-out"></i>
+            Sign Out
+          </button>
         </nav>
-      </div>
-    </div>
-
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script src="app.js"></script>
     <script>
       // Set mobile camera capture dynamically to avoid HTML lint warnings
-      document.addEventListener('DOMContentLoaded', () => {
-        const camInput = document.getElementById('sCamera');
-        if (camInput) camInput.setAttribute('capture', 'environment');
-      });
+    async function init() {
+      const user = await checkAuth('service');
+      if (!user) return;
 
-      let selectedFile = null;
-      const user = checkAuth();
-      if (user) {
-        window._supabase = window.supabase;
-        document.getElementById('user-name').textContent = user.name;
-        document.getElementById('user-avatar').textContent = user.name.charAt(0);
-        loadData();
-      }
+      window._supabase = window.supabase;
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('user-avatar').textContent = user.name.charAt(0);
+
+      const camInput = document.getElementById('sCamera');
+      if (camInput) camInput.setAttribute('capture', 'environment');
+
+      lucide.createIcons();
+      loadData(user);
+      
+      // Submit listener
+      document.getElementById('serviceForm').addEventListener('submit', (e) => submitTicket(e, user));
+    }
+    init();
 
       function previewPhoto(input) {
         if (input.files[0]) {
@@ -240,67 +244,72 @@
         }
       }
 
-      async function submitTicket(e) {
-        e.preventDefault();
-        if (!selectedFile) {
-          alert("❌ Photo proof zaroori hai!");
-          return;
+    async function submitTicket(e, user) {
+      e.preventDefault();
+      if (!selectedFile) {
+        alert("❌ Photo proof zaroori hai!");
+        return;
+      }
+      const btn = document.getElementById('ticketSubmitBtn');
+      btn.textContent = 'Uploading...';
+      try {
+        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'service', user);
+        btn.textContent = 'Opening...';
+        const payload = {
+          customer_name: document.getElementById('custName').value,
+          mobile: document.getElementById('custMobile').value,
+          mobile_no: document.getElementById('custMobile').value,
+          location: document.getElementById('tLocation').value,
+          product_name: document.getElementById('tProduct').value,
+          serial_no: document.getElementById('tSerial').value,
+          service_type: document.getElementById('tType').value,
+          type: document.getElementById('tType').value,
+          login_id: document.getElementById('tLoginID').value,
+          narration: document.getElementById('tNarration').value,
+          problem: document.getElementById('tNarration').value,
+          status: 'Pending',
+          staff_id: user.staffId,
+          staff_name: user.name,
+          added_by_name: user.name,
+          image_url: imageUrl
+        };
+        const { error } = await window._supabase.from('service').insert([payload]);
+        if (error) {
+          console.error("Insert Error:", error);
+          alert("Error: " + error.message);
+        } else {
+          alert("✓ Service Ticket Created!");
+          document.getElementById('serviceForm').reset();
+          document.getElementById('photoPreview').style.display = 'none';
+          selectedFile = null;
+          loadData(user);
         }
-        document.getElementById('ticketSubmitBtn').textContent = 'Uploading...';
-        try {
-          const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'service', user);
-          document.getElementById('ticketSubmitBtn').textContent = 'Opening...';
-          const payload = {
-            customer_name: document.getElementById('custName').value,
-            mobile: document.getElementById('custMobile').value,
-            mobile_no: document.getElementById('custMobile').value,
-            location: document.getElementById('tLocation').value,
-            product_name: document.getElementById('tProduct').value,
-            serial_no: document.getElementById('tSerial').value,
-            service_type: document.getElementById('tType').value,
-            type: document.getElementById('tType').value,
-            login_id: document.getElementById('tLoginID').value,
-            narration: document.getElementById('tNarration').value,
-            problem: document.getElementById('tNarration').value,
-            status: 'Pending',
-            staff_id: user.staffId,
-            staff_name: user.name,
-            added_by_name: user.name,
-            image_url: imageUrl
-          };
-          const { error } = await window._supabase.from('service').insert([payload]);
-          if (error) {
-            console.error("Insert Error:", error);
-            alert("Error: " + error.message);
-          } else {
-            alert("✓ Service Ticket Created!");
-            document.getElementById('serviceForm').reset();
-            document.getElementById('photoPreview').style.display = 'none';
-            selectedFile = null;
-            loadData();
-          }
-        } catch (er) { alert("Upload failed: " + er.message); }
-        document.getElementById('ticketSubmitBtn').textContent = 'Open Ticket';
-      }
+      } catch (er) { alert("Upload failed: " + er.message); }
+      btn.textContent = 'Open Ticket';
+    }
 
-      async function markResolved(id) {
-        if (!confirm("Mark this ticket as Done?")) return;
-        try {
-          if (!window._supabase) return;
-          const { error } = await window._supabase.from('service').update({ status: 'Done' }).eq('id', id);
-          if (!error) loadData();
-        } catch (e) { alert("Error connecting to database"); }
-      }
+    async function markResolved(id, user) {
+      if (!confirm("Mark this ticket as Done?")) return;
+      try {
+        if (!window._supabase || !user) return;
+        const { error } = await window._supabase
+          .from('service')
+          .update({ status: 'Done' })
+          .eq('id', id)
+          .eq('staff_id', user.staffId); // Security: only update your own
+        if (!error) loadData(user);
+      } catch (e) { alert("Error connecting to database"); }
+    }
 
-      async function loadData() {
-        try {
-          if (!window._supabase) return;
-          const [{ count: openC }, { count: resC }, { count: totalC }, { data: tickets }] = await Promise.all([
-            window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
-            window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Done'),
-            window._supabase.from('service').select('*', { count: 'exact', head: true }),
-            window._supabase.from('service').select('*').order('created_at', { ascending: false }).limit(20)
-          ]);
+    async function loadData(user) {
+      try {
+        if (!window._supabase || !user) return;
+        const [{ count: openC }, { count: resC }, { count: totalC }, { data: tickets }] = await Promise.all([
+          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Pending').eq('staff_id', user.staffId),
+          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Done').eq('staff_id', user.staffId),
+          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('staff_id', user.staffId),
+          window._supabase.from('service').select('*').eq('staff_id', user.staffId).order('created_at', { ascending: false }).limit(20)
+        ]);
 
           document.getElementById('openCount').textContent = openC ?? 0;
           document.getElementById('resolvedCount').textContent = resC ?? 0;
@@ -320,7 +329,7 @@
             <td><strong class="cust-name-text">${t.product_name}</strong><br><span class="product-meta-text">${t.problem || '—'}</span></td>
             <td><span class="status-pill ${t.status === 'Done' ? 'status-normal' : 'status-low'}">${t.status}</span></td>
             <td class="product-meta-text">${new Date(t.created_at).toLocaleDateString()}</td>
-            <td>${t.status === 'Pending' ? `<button class="btn btn-primary btn-hero" style="padding: 6px 12px; font-size: 11px; width: auto;" onclick="markResolved('${t.id}')">✓ Resolve</button>` : `<span class="product-meta-text">Complete</span>`}</td>
+            <td>${t.status === 'Pending' ? `<button class="btn btn-primary btn-hero" style="padding: 6px 12px; font-size: 11px; width: auto;" onclick="markResolved('${t.id}', { staffId: '${t.staff_id}' })">✓ Resolve</button>` : `<span class="product-meta-text">Complete</span>`}</td>
           </tr>`).join('');
         } catch (e) { console.error('Load Error:', e); }
       }

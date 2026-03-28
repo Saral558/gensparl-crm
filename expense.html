@@ -10,7 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="css/theme.css">
-  <script src="js/ui/navigation.js"></script>
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .exp-title-text { font-weight: 700; font-size: 15px; }
@@ -109,7 +108,7 @@
               </button>
             </div>
             <label for="eCamera" class="hidden">Camera Upload</label>
-            </input type="file" id="eCamera" accept="image/*" class="hidden" capture="environment" onchange="previewImg(this)" title="Capture Expense Receipt">
+            <input type="file" id="eCamera" accept="image/*" class="hidden" onchange="previewImg(this)" title="Capture Expense Receipt">
             <label for="fGallery" class="hidden">Gallery Upload</label>
             <input type="file" id="fGallery" accept="image/*" class="hidden" onchange="previewImg(this)" title="Choose from Gallery">
           </div>
@@ -151,10 +150,10 @@
         <i data-lucide="receipt"></i>
         Expenses
       </a>
-      <a href="profile.html" class="nav-item" title="Profile">
-        <i data-lucide="user"></i>
-        Profile
-      </a>
+      <button class="nav-item nav-logout-btn" onclick="logout()" title="Sign Out">
+        <i data-lucide="log-out"></i>
+        Sign Out
+      </button>
     </nav>
   </div>
 
@@ -162,32 +161,38 @@
   <script src="js/supabase-client.js"></script>
   <script src="app.js"></script>
   <script>
-    // Set mobile camera capture dynamically to avoid HTML lint warnings
-    document.addEventListener('DOMContentLoaded', () => {
-      const camInput = document.getElementById('eCamera');
-      if (camInput) camInput.setAttribute('capture', 'environment');
-    });
-
     let selectedFile = null;
-    const user = checkAuth('expense');
-    if (user) {
+    async function init() {
+      const user = await checkAuth('expense');
+      if (!user) return;
+
       window._supabase = window.supabase;
       document.getElementById('user-name').textContent = user.name;
       document.getElementById('user-avatar').textContent = user.name.charAt(0);
       document.getElementById('eDate').valueAsDate = new Date();
-      loadRecords();
-    }
+      
+      const camInput = document.getElementById('eCamera');
+      if (camInput) camInput.setAttribute('capture', 'environment');
 
-    function previewPhoto(input) {
+      lucide.createIcons();
+      loadRecords(user);
+      
+      // Submit listener
+      document.getElementById('expForm').addEventListener('submit', (e) => submitExp(e, user));
+    }
+    init();
+
+    function previewImg(input) {
       if (input.files[0]) {
         selectedFile = input.files[0];
-        const preview = document.getElementById('photoPreview');
+        const preview = document.getElementById('previewImgExp');
         preview.src = URL.createObjectURL(selectedFile);
         preview.style.display = 'block';
+        preview.classList.remove('hidden');
       }
     }
 
-    async function submitExp(e) {
+    async function submitExp(e, user) {
       e.preventDefault();
       if (!selectedFile) {
         alert("❌ Photo proof zaroori hai!");
@@ -216,18 +221,25 @@
           alert("✓ Expense Saved with Proof!");
           document.getElementById('expForm').reset();
           document.getElementById('eDate').valueAsDate = new Date();
-          document.getElementById('photoPreview').style.display = 'none';
+          const prev = document.getElementById('previewImgExp');
+          prev.style.display = 'none';
+          prev.classList.add('hidden');
           selectedFile = null;
-          loadRecords();
+          loadRecords(user);
         }
       } catch (err) { alert("Error: " + err.message); }
       btn.textContent = 'Save Expense';
     }
 
-    async function loadRecords() {
+    async function loadRecords(user) {
       try {
-        if (!window._supabase) return;
-        const { data, error } = await window._supabase.from('expenses').select('*').order('created_at', { ascending: false }).limit(20);
+        if (!window._supabase || !user) return;
+        const { data, error } = await window._supabase
+          .from('expenses')
+          .select('*')
+          .eq('staff_id', user.staffId)
+          .order('created_at', { ascending: false })
+          .limit(20);
         if (error) return;
         const tbody = document.getElementById('expTable');
         if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:#94a3b8">No records</td></tr>'; return; }
