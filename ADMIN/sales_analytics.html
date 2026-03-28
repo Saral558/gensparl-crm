@@ -107,7 +107,13 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 1100px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } .charts-grid { grid-template-columns: 1fr; } }
-    @media (max-width: 720px) { .summary-grid { grid-template-columns: 1fr; } .pm-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 720px) { 
+      .summary-grid { grid-template-columns: 1fr; } 
+      .pm-grid { grid-template-columns: 1fr; } 
+      .filters { padding: 10px; }
+      .topbar { padding: 0 16px; height: auto; padding-top: 16px; padding-bottom: 16px; flex-direction: column; gap: 12px; align-items: flex-start; }
+      .topbar-right { width: 100%; justify-content: space-between; }
+    }
   </style>
 
   <link rel="manifest" href="/manifest.json">

@@ -195,6 +195,7 @@
   <script src="app.js"></script>
   <script>
     // Canonical CheckAuth
+    const user = checkAuth('sales');
     if (user) {
       window._supabase = window.supabase;
       document.getElementById('user-name').textContent = user.name;

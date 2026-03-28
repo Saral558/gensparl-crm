@@ -144,6 +144,50 @@
             font-weight: 700;
         }
 
+        /* --- MOBILE --- */
+        .menu-toggle {
+            display: none;
+            width: 40px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+        }
+
+        @media (max-width: 1024px) {
+            .menu-toggle {
+                display: flex;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 2000;
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .topbar {
+                left: 0;
+                padding: 0 16px;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px 16px;
+            }
+
+            .search-box {
+                display: none; /* Hide search on small mobile to save space */
+            }
+        }
+
         .user-profile {
             display: flex;
             align-items: center;
@@ -511,9 +555,17 @@
         </nav>
     </div>
 
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Top Navigation Bar -->
     <div class="topbar">
-        <div class="view-title" id="viewTitle">Dashboard</div>
+        <div class="topbar-left">
+            <button class="menu-toggle" id="menuToggle" title="Toggle Menu">
+                <i data-lucide="menu"></i>
+            </button>
+            <div class="view-title" id="viewTitle">Dashboard</div>
+        </div>
         <div class="topbar-right">
             <div class="search-box">
                 <i data-lucide="search"></i>
@@ -550,6 +602,26 @@
             document.getElementById('adminName').textContent = currentUser.name;
             document.getElementById('avatarLetter').textContent = currentUser.name.charAt(0).toUpperCase();
         }
+
+        // Mobile Sidebar Toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        menuToggle.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+
+        // Close sidebar on nav click (mobile)
+        document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 1024) toggleSidebar();
+            });
+        });
     </script>
 
     <script>

@@ -1,3 +1,8 @@
+// 🌐 GLOBAL URL MASKING (Cosmetic removal of .html)
+if (window.location.pathname.endsWith('.html') && !window.location.pathname.endsWith('index.html')) {
+    window.history.replaceState(null, '', window.location.pathname.replace('.html', ''));
+}
+
 // 🔐 LOGIN FUNCTION (Hardened Supabase Auth)
 async function login() {
   const btn = document.querySelector('button');
@@ -78,7 +83,8 @@ async function login() {
       finance: "finance.html",
       expense: "expense.html",
       service: "service.html",
-      crm: "crm.html"
+      crm: "crm.html",
+      inventory: "inventory.html"
     };
 
     window.location.href = routeMap[sessionUser.role] || "index.html";
@@ -98,13 +104,13 @@ function checkAuth(role) {
   const rootPath = window.location.pathname.includes('/ADMIN/') || window.location.pathname.includes('\\ADMIN\\') ? '../' : '';
 
   if (!user) {
-    window.location.href = rootPath + "login.html";
+    window.location.href = rootPath + "index.html";
     return null;
   }
 
   if (role && user.role !== role && user.role !== 'admin') {
     alert("Unauthorized Access Attempt");
-    window.location.href = rootPath + "login.html";
+    window.location.href = rootPath + "index.html";
     return null;
   }
 
@@ -187,6 +193,6 @@ window.utils = crmUtils;
 function logout() {
   localStorage.removeItem("currentUser");
   const rootPath = window.location.pathname.includes('/ADMIN/') || window.location.pathname.includes('\\ADMIN\\') ? '../' : '';
-  window.location.href = rootPath + "login.html"; 
+  window.location.href = rootPath + "index.html"; 
 }
 

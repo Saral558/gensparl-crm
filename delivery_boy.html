@@ -497,9 +497,14 @@
                     </div>
                 </div>
             </div>
-            <button class="btn btn-outline header-refresh-btn" onclick="refreshUI()" title="Refresh Deliveries">
-                <i data-lucide="rotate-cw" id="refresh-icon" class="header-refresh-icon"></i>
-            </button>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="refreshUI()" title="Refresh Deliveries">
+                    <i data-lucide="rotate-cw" id="refresh-icon" class="icon-20 icon-muted"></i>
+                </button>
+                <button class="icon-btn" onclick="logout()" title="Logout">
+                    <i data-lucide="log-out" class="icon-20 icon-muted"></i>
+                </button>
+            </div>
         </header>
 
         <div class="stats-row">
