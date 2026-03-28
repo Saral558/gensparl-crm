@@ -3,6 +3,22 @@ if (window.location.pathname.endsWith('.html') && !window.location.pathname.ends
     window.history.replaceState(null, '', window.location.pathname.replace('.html', ''));
 }
 
+// 🛡️ ROLE-BASED ACCESS CONTROL (RBAC) CONFIG
+const ROLE_PERMISSIONS = {
+  admin: ['sales', 'inventory', 'delivery', 'service', 'finance', 'expense', 'gifts', 'admin'],
+  staff: ['sales', 'service'],
+  delivery_boy: ['delivery']
+};
+
+const ROLE_DEFAULT_ROUTES = {
+  admin: 'ADMIN/index.html',
+  staff: 'sales.html',
+  delivery_boy: 'delivery_boy.html'
+};
+
+window.ROLE_PERMISSIONS = ROLE_PERMISSIONS;
+window.ROLE_DEFAULT_ROUTES = ROLE_DEFAULT_ROUTES;
+
 // 🔐 LOGIN FUNCTION (Hardened Supabase Auth)
 async function login() {
   const btn = document.querySelector('button');
@@ -66,7 +82,7 @@ async function login() {
     const sessionUser = {
       id: profile?.id || (authData?.user?.id),
       staffId: profile?.staff_id || idValue,
-      role: profile?.role || 'sales', 
+      role: profile?.role || 'staff', // Base role fallback
       name: profile?.name || (authData?.user?.email ? authData.user.email.split('@')[0] : 'User'),
       avatar: profile?.avatar_url || null,
       about: profile?.about || ''
@@ -74,20 +90,8 @@ async function login() {
 
     localStorage.setItem("currentUser", JSON.stringify(sessionUser));
     
-    // 5. Route to appropriate page
-    const routeMap = {
-      admin: "ADMIN/index.html",
-      delivery_manager: "ADMIN/delivery_admin.html",
-      sales: "sales.html",
-      delivery: "delivery_boy.html",
-      finance: "finance.html",
-      expense: "expense.html",
-      service: "service.html",
-      crm: "crm.html",
-      inventory: "inventory.html"
-    };
-
-    window.location.href = routeMap[sessionUser.role] || "index.html";
+    // 5. Route strictly according to RBAC layout
+    window.location.href = ROLE_DEFAULT_ROUTES[sessionUser.role] || "index.html";
 
   } catch (err) {
     console.error("Critical Login Error:", err);
@@ -99,7 +103,7 @@ async function login() {
 }
 
 // 🔒 PROTECT PAGES
-function checkAuth(role) {
+function checkAuth(requiredModule) {
   const user = JSON.parse(localStorage.getItem("currentUser"));
   const rootPath = window.location.pathname.includes('/ADMIN/') || window.location.pathname.includes('\\ADMIN\\') ? '../' : '';
 
@@ -108,10 +112,15 @@ function checkAuth(role) {
     return null;
   }
 
-  if (role && user.role !== role && user.role !== 'admin') {
-    alert("Unauthorized Access Attempt");
-    window.location.href = rootPath + "index.html";
-    return null;
+  // Admin override automatically has full access in fallback case, but RBAC is safe
+  const authorizedModules = window.ROLE_PERMISSIONS[user.role] || [];
+  
+  if (requiredModule && !authorizedModules.includes(requiredModule)) {
+    if (user.role !== 'admin') {
+       alert("Unauthorized Access Attempt");
+       window.location.href = rootPath + "index.html";
+       return null;
+    }
   }
 
   if (document.getElementById("userRole")) {

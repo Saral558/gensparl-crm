@@ -9,6 +9,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const prefix = isInAdmin ? '../' : '';
     const adminPrefix = isInAdmin ? '' : 'ADMIN/';
 
+    // Get current user role
+    let userRole = null;
+    let isAdmin = false;
+    try {
+        const u = JSON.parse(localStorage.getItem('currentUser'));
+        if (u) {
+            userRole = u.role;
+            isAdmin = (userRole === 'admin');
+        }
+    } catch(e) {}
+
     // Bottom Navigation (Mobile Only)
     const bottomNav = document.createElement('nav');
     bottomNav.className = 'bottom-nav';
@@ -162,13 +173,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(bottomNav);
         document.body.appendChild(sidebar);
         
-        // Mark active
+        // Filter links by role (RBAC UI Enforcement)
+        const userPermissions = window.ROLE_PERMISSIONS ? (window.ROLE_PERMISSIONS[userRole] || []) : [];
         const links = [...document.querySelectorAll('.nav-btn'), ...document.querySelectorAll('.s-link')];
+        
         links.forEach(link => {
-            if (currentPath.includes(link.getAttribute('href'))) {
+            // Mark active
+            if (currentPath.includes(link.getAttribute('href') || link.getAttribute('data-view'))) {
                 link.classList.add('active');
             }
+
+            // Hide unauthorized links 
+            if (!isAdmin) {
+                const viewTarget = link.getAttribute('data-view');
+                if (viewTarget && !userPermissions.includes(viewTarget)) {
+                    link.style.display = 'none';
+                }
+            }
         });
+
+        // Hide Admin Panel button & divider for non-admins
+        if (!isAdmin) {
+            const adminLnk = document.querySelector('.admin-link');
+            const navDiv = document.querySelector('.nav-divider');
+            if(adminLnk) adminLnk.style.display = 'none';
+            if(navDiv) navDiv.style.display = 'none';
+        }
     }
 
     // Refresh icons
