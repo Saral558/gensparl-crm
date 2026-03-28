@@ -1,16 +1,20 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const activeUser = checkAuth('admin');
-    if (!activeUser) return;
+document.addEventListener('DOMContentLoaded', async () => {
+    // 🛡️ Await Authentication (Zero Error Guard)
+    const activeUser = await checkAuth('admin');
+    if (!activeUser) return; // checkAuth will handle redirect if needed
 
     document.getElementById('adminName').textContent = activeUser.name;
     const avatar = document.getElementById('avatarLetter');
     if (avatar) avatar.textContent = activeUser.name.charAt(0).toUpperCase();
 
+    // 🔄 Wait for DataManager to boot
     if (window.DataManager) {
-        window.DataManager.init().then(() => {
-            // Initial view
+        try {
+            await window.DataManager.init();
             navigate('dashboard');
-        });
+        } catch (err) {
+            console.error("DataManager initialization failed:", err);
+        }
     }
 
     const contentArea = document.getElementById('contentArea');

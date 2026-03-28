@@ -5,7 +5,7 @@ if (window.location.pathname.endsWith('.html') && !window.location.pathname.ends
 
 // 🛡️ ROLE-BASED ACCESS CONTROL (RBAC) CONFIG
 const ROLE_PERMISSIONS = {
-  admin: ['sales', 'inventory', 'delivery', 'service', 'finance', 'expense', 'gifts', 'admin', 'delivery_manager'],
+  admin: ['sales', 'inventory', 'delivery', 'service', 'finance', 'expense', 'gift_box', 'admin', 'delivery_manager', 'crm'],
   sales: ['sales'],
   service: ['service'],
   delivery: ['delivery'],
@@ -13,7 +13,8 @@ const ROLE_PERMISSIONS = {
   expense: ['expense'],
   inventory: ['inventory'],
   delivery_manager: ['delivery_manager'],
-  gift_box: ['gift_box']
+  gift_box: ['gift_box'],
+  crm: ['admin', 'sales', 'inventory', 'delivery', 'service', 'finance', 'expense', 'gift_box', 'delivery_manager']
 };
 
 const ROLE_DEFAULT_ROUTES = {
@@ -25,7 +26,8 @@ const ROLE_DEFAULT_ROUTES = {
   expense: 'expense.html',
   inventory: 'inventory.html',
   delivery_manager: 'ADMIN/delivery_admin.html',
-  gift_box: 'gift-box.html'
+  gift_box: 'gift-box.html',
+  crm: 'ADMIN/index.html'
 };
 
 window.ROLE_PERMISSIONS = ROLE_PERMISSIONS;
@@ -46,19 +48,24 @@ async function login() {
     btn.disabled = true;
 
     try {
-        const email = `${idValue}@dineshcrm.com`;
+        const email = `${idValue.toLowerCase()}`;
+        const finalEmail = email.includes('@') ? email : `${email}@dineshcrm.com`;
 
         // 1. Perform Supabase Sign-In (Direct Auth Only)
         let { data: authData, error: authError } = await window.supabase.auth.signInWithPassword({
-            email: email,
+            email: finalEmail,
             password: pass
         });
 
         if (authError) {
             console.error("Auth Error:", authError.message);
-            alert("Login Failed: Invalid credentials.");
+            const detail = authError.message.includes("Invalid login credentials") 
+                ? "Invalid ID or Password." 
+                : authError.message;
+            alert(`Login Failed: ${detail}`);
             return;
         }
+
 
         // 2. Fetch Verified Profile
         const { data: profile, error: profileError } = await window.supabase
@@ -112,14 +119,22 @@ async function checkAuth(requiredModule) {
     
     if (authError || !authUser) {
         console.warn("No active session or session expired.");
-        logout();
+        
+        // 🛡️ STOP BLINKING: Detect if we are already on the login page
+        const path = window.location.pathname.toLowerCase();
+        const isLoginPage = path.endsWith('index.html') || path.endsWith('/') || path.length <= 1;
+
+        if (requiredModule || !isLoginPage) {
+            console.log("Redirecting to login from protected context...");
+            logout();
+        }
         return null;
     }
 
     // 2. Fetch role from source of truth (Database)
     const { data: profile, error: profileError } = await window.supabase
         .from('profiles')
-        .select('role, name, staff_id, avatar_url')
+        .select('id, role, name, staff_id, avatar_url')
         .eq('id', authUser.id)
         .single();
 
@@ -232,13 +247,31 @@ window.utils = crmUtils;
 
 // 🚪 LOGOUT
 async function logout() {
+    const path = window.location.pathname.toLowerCase();
+    const isLoginPage = path.endsWith('index.html') || path.endsWith('/') || path.length <= 1;
     const rootPath = window.location.pathname.includes('/ADMIN/') || window.location.pathname.includes('\\ADMIN\\') ? '../' : '';
+
     try {
         await window.supabase.auth.signOut();
     } catch (e) {
         console.warn("Sign out err:", e);
     }
+    
     localStorage.clear();
-    window.location.href = rootPath + "index.html"; 
+
+    // Only redirect if NOT already on the login page to prevent refresh loops
+    if (!isLoginPage) {
+        window.location.href = rootPath + "index.html"; 
+    }
 }
+
+// 📱 GLOBAL CAMERA ACTIVATOR (Fixed for Zero Error)
+// This applies the native 'capture' property to any input with 'data-capture'.
+// This stops lint warnings in the IDE while keeping the mobile camera functional.
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('input[data-capture]').forEach(input => {
+        input.setAttribute('capture', input.dataset.capture);
+    });
+});
+
 

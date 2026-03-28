@@ -145,7 +145,7 @@
             </button>
           </div>
           <label for="sCamera" class="hidden">Camera Upload</label>
-          <input type="file" id="sCamera" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Capture Sales Proof">
+          <input type="file" id="sCamera" accept="image/*" data-capture="environment" class="hidden" onchange="previewPhoto(this)" title="Capture Sales Proof">
           <label for="sGallery" class="hidden">Gallery Upload</label>
           <input type="file" id="sGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Choose from Gallery">
         </div>
@@ -198,22 +198,24 @@
   <script src="js/supabase-client.js"></script>
   <script src="app.js"></script>
   <script>
+    let currentUser = null;
+
     async function init() {
-      const user = await checkAuth('sales');
-      if (!user) return; // checkAuth handles redirection
+      currentUser = await checkAuth('sales');
+      if (!currentUser) return; // checkAuth handles redirection
 
       window._supabase = window.supabase;
-      document.getElementById('user-name').textContent = user.name;
-      document.getElementById('user-avatar').textContent = user.name.charAt(0);
+      document.getElementById('user-name').textContent = currentUser.name;
+      document.getElementById('user-avatar').textContent = currentUser.name.charAt(0);
 
       const camInput = document.getElementById('sCamera');
       if (camInput) camInput.setAttribute('capture', 'environment');
 
       lucide.createIcons();
-      loadData(user);
+      loadData();
       
       // Submit listener
-      document.getElementById('saleForm').addEventListener('submit', (e) => submitSale(e, user));
+      document.getElementById('saleForm').addEventListener('submit', (e) => submitSale(e));
     }
     init();
 
@@ -231,6 +233,11 @@
     async function submitSale(e) {
       e.preventDefault();
 
+      if (!currentUser) {
+        alert("Session expired. Please refresh the page and log in again.");
+        return;
+      }
+
       if (!selectedFile) {
         alert("❌ Error: Item Photo Proof is mandatory. Please capture or upload a photo.");
         return;
@@ -242,15 +249,15 @@
 
       try {
         // 1. Upload Image
-        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'sale', user);
+        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'sale', currentUser);
 
         btn.textContent = 'Saving Record...';
 
         const payload = {
-          staff_id: user.staffId,      // TEXT column — stores '1003' style ID
-          salesboy_id: user.id || null, // UUID FK (nullable) — Supabase auth UUID
-          salesboy_name: user.name,
-          staff_name: user.name,
+          staff_id: currentUser.staffId,      // TEXT column — stores '1003' style ID
+          salesboy_id: currentUser.id || null, // UUID FK (nullable) — Supabase auth UUID
+          salesboy_name: currentUser.name,
+          staff_name: currentUser.name,
           customer_name: document.getElementById('sCustomer').value,
           mobile: document.getElementById('sMobile').value,
           mobile_no: document.getElementById('sMobile').value,
@@ -293,16 +300,16 @@
 
     async function loadData() {
       try {
-        if (!window._supabase) return;
+        if (!window._supabase || !currentUser) return;
         const today = new Date().toISOString().split('T')[0];
 
         const [{ count: todayC }, { count: totalC }, { data: sales }] = await Promise.all([
           window._supabase.from('sales').select('*', { count: 'exact', head: true })
-            .eq('staff_id', user.staffId).gte('created_at', today),
+            .eq('staff_id', currentUser.staffId).gte('created_at', today),
           window._supabase.from('sales').select('*', { count: 'exact', head: true })
-            .eq('staff_id', user.staffId),
+            .eq('staff_id', currentUser.staffId),
           window._supabase.from('sales').select('*')
-            .eq('staff_id', user.staffId).order('created_at', { ascending: false }).limit(10)
+            .eq('staff_id', currentUser.staffId).order('created_at', { ascending: false }).limit(10)
         ]);
 
         document.getElementById('todaySales').textContent = todayC ?? 0;

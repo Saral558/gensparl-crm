@@ -672,11 +672,15 @@
     <script src="../app.js"></script>
     <script src="../js/delivery/delivery_store.js"></script>
     <script>
-        const user = checkAuth('delivery_manager');
-        if (user) {
-            document.getElementById('adminName').innerText = `Welcome, ${user.name}`;
-            refreshUI();
-        }
+        let user = null;
+
+        (async () => {
+            user = await checkAuth('delivery_manager');
+            if (user) {
+                document.getElementById('adminName').innerText = `Welcome, ${user.name}`;
+                refreshUI();
+            }
+        })();
 
         let currentView = 'Pending';
         let activeOrderId = null;
@@ -955,6 +959,8 @@
         }
 
         async function saveNewRecord() {
+            if (!user) return alert("Session not loaded. Please refresh the page and try again.");
+
             const name = document.getElementById('customerName').value;
             const mob = document.getElementById('mobile').value;
             const addr = document.getElementById('address').value;

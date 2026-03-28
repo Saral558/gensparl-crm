@@ -108,7 +108,7 @@
       <div class="section-header">
         <h2>Create Service Ticket</h2>
       </div>
-      <form id="serviceForm" onsubmit="submitTicket(event)">
+      <form id="serviceForm">
         <div class="service-form-grid">
           <div class="input-group">
             <label class="input-label">Customer Name</label>
@@ -159,7 +159,7 @@
               </button>
             </div>
             <label for="sCamera" class="hidden">Camera Upload</label>
-            <input type="file" id="sCamera" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Capture Service Proof">
+            <input type="file" id="sCamera" accept="image/*" data-capture="environment" class="hidden" onchange="previewProof(this)" title="Capture Repair Proof">
             <label for="sGallery" class="hidden">Gallery Upload</label>
             <input type="file" id="sGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)"
               title="Choose from Gallery">
@@ -213,27 +213,31 @@
         </nav>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
+    <script src="js/crm-utils.js"></script>
     <script src="app.js"></script>
     <script>
-      // Set mobile camera capture dynamically to avoid HTML lint warnings
+      let currentUser = null;
+
     async function init() {
-      const user = await checkAuth('service');
-      if (!user) return;
+      currentUser = await checkAuth('service');
+      if (!currentUser) return;
 
       window._supabase = window.supabase;
-      document.getElementById('user-name').textContent = user.name;
-      document.getElementById('user-avatar').textContent = user.name.charAt(0);
+      document.getElementById('user-name').textContent = currentUser.name;
+      document.getElementById('user-avatar').textContent = currentUser.name.charAt(0);
 
       const camInput = document.getElementById('sCamera');
       if (camInput) camInput.setAttribute('capture', 'environment');
 
       lucide.createIcons();
-      loadData(user);
+      loadData();
       
       // Submit listener
-      document.getElementById('serviceForm').addEventListener('submit', (e) => submitTicket(e, user));
+      document.getElementById('serviceForm').addEventListener('submit', (e) => submitTicket(e));
     }
     init();
+
+    let selectedFile = null;
 
       function previewPhoto(input) {
         if (input.files[0]) {
@@ -244,8 +248,17 @@
         }
       }
 
-    async function submitTicket(e, user) {
+      // Camera input uses previewProof — same as previewPhoto
+      function previewProof(input) { previewPhoto(input); }
+
+    async function submitTicket(e) {
       e.preventDefault();
+
+      if (!currentUser) {
+        alert("Session expired. Please refresh and log in again.");
+        return;
+      }
+
       if (!selectedFile) {
         alert("❌ Photo proof zaroori hai!");
         return;
@@ -253,7 +266,7 @@
       const btn = document.getElementById('ticketSubmitBtn');
       btn.textContent = 'Uploading...';
       try {
-        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'service', user);
+        const imageUrl = await utils.compressAndUpload(selectedFile, 'sales-proof', 'service', currentUser);
         btn.textContent = 'Opening...';
         const payload = {
           customer_name: document.getElementById('custName').value,
@@ -268,9 +281,9 @@
           narration: document.getElementById('tNarration').value,
           problem: document.getElementById('tNarration').value,
           status: 'Pending',
-          staff_id: user.staffId,
-          staff_name: user.name,
-          added_by_name: user.name,
+          staff_id: currentUser.staffId,
+          staff_name: currentUser.name,
+          added_by_name: currentUser.name,
           image_url: imageUrl
         };
         const { error } = await window._supabase.from('service').insert([payload]);
@@ -282,7 +295,7 @@
           document.getElementById('serviceForm').reset();
           document.getElementById('photoPreview').style.display = 'none';
           selectedFile = null;
-          loadData(user);
+          loadData();
         }
       } catch (er) { alert("Upload failed: " + er.message); }
       btn.textContent = 'Open Ticket';
@@ -301,14 +314,14 @@
       } catch (e) { alert("Error connecting to database"); }
     }
 
-    async function loadData(user) {
+    async function loadData() {
       try {
-        if (!window._supabase || !user) return;
+        if (!window._supabase || !currentUser) return;
         const [{ count: openC }, { count: resC }, { count: totalC }, { data: tickets }] = await Promise.all([
-          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Pending').eq('staff_id', user.staffId),
-          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Done').eq('staff_id', user.staffId),
-          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('staff_id', user.staffId),
-          window._supabase.from('service').select('*').eq('staff_id', user.staffId).order('created_at', { ascending: false }).limit(20)
+          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Pending').eq('staff_id', currentUser.staffId),
+          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('status', 'Done').eq('staff_id', currentUser.staffId),
+          window._supabase.from('service').select('*', { count: 'exact', head: true }).eq('staff_id', currentUser.staffId),
+          window._supabase.from('service').select('*').eq('staff_id', currentUser.staffId).order('created_at', { ascending: false }).limit(20)
         ]);
 
           document.getElementById('openCount').textContent = openC ?? 0;
@@ -335,11 +348,9 @@
       }
     </script>
 
-    <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
       }
     </script>
 </body>
-
 </html>

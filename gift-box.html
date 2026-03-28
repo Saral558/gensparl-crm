@@ -5,17 +5,37 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Gensparl CRM - Gift and Promotion tracking for customer engagement.">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="css/theme.css">
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .bill-no-text { font-family: monospace; font-size: 13px; color: var(--text-muted); }
-    .cust-name-text { font-weight: 700; font-size: 15px; }
-    .gift-item-text { font-weight: 800; color: var(--accent); }
-    .gift-val-text { font-weight: 800; color: var(--success); }
-    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .bill-no-text {
+      font-family: monospace;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .cust-name-text {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .gift-item-text {
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .gift-val-text {
+      font-weight: 800;
+      color: var(--success);
+    }
+
     .photo-area {
       grid-column: 1 / -1;
       background: rgba(255, 255, 255, 0.03);
@@ -23,7 +43,7 @@
       border-radius: 20px;
       border: 1px dashed var(--border);
     }
-    
+
     .preview-img-gift {
       display: none;
       width: 100%;
@@ -32,7 +52,7 @@
       border: 1px solid var(--border);
       object-fit: contain;
       height: 200px;
-      background: rgba(0,0,0,0.2);
+      background: rgba(0, 0, 0, 0.2);
     }
   </style>
 
@@ -93,37 +113,41 @@
             <label class="input-label">Remarks</label>
             <input type="text" id="gRem" placeholder="Details about this gift..." title="Remarks">
           </div>
-          
+
           <!-- Mandatory Photo Section -->
           <div class="photo-area">
             <label class="input-label">Photo Proof (Mandatory 📸)</label>
             <img id="photoPreview" alt="Photo Proof" class="photo-proof-preview-gift preview-img-gift hidden">
             <div class="flex-center gap-10">
-              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('img-camera').click()" title="Take photo">
+              <button type="button" class="btn btn-outline flex-1"
+                onclick="document.getElementById('img-camera').click()" title="Take photo">
                 <i data-lucide="camera"></i> Camera
               </button>
-              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('gGallery').click()" title="Upload photo">
+              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('gGallery').click()"
+                title="Upload photo">
                 <i data-lucide="image"></i> Gallery
               </button>
             </div>
-            <input type="file" id="img-camera" class="hidden" accept="image/*" onchange="previewPhoto(this)" title="Capture Gift Photo">
-            <input type="file" id="gGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)" title="Gallery input">
+            <input type="file" id="img-camera" class="hidden" accept="image/*" data-capture="environment"
+              onchange="handleImage(this)" title="Capture Gift Proof">
+            <input type="file" id="gGallery" accept="image/*" class="hidden" onchange="previewPhoto(this)"
+              title="Gallery input">
           </div>
         </div>
         <button type="submit" class="btn btn-primary w-full mt-20" id="subBtn">Save Gift Entry</button>
       </form>
-    <div class="stats-row">
-      <div class="stat-glass">
-        <i data-lucide="gift" class="icon-20 icon-accent"></i>
-        <span class="stat-val" id="totalGifts">0</span>
-        <span class="stat-lbl">Gifts Given</span>
+      <div class="stats-row">
+        <div class="stat-glass">
+          <i data-lucide="gift" class="icon-20 icon-accent"></i>
+          <span class="stat-val" id="totalGifts">0</span>
+          <span class="stat-lbl">Gifts Given</span>
+        </div>
+        <div class="stat-glass">
+          <i data-lucide="award" class="icon-20 icon-success"></i>
+          <span class="stat-val stat-success-text" id="activeRewards">0</span>
+          <span class="stat-lbl">Active Rewards</span>
+        </div>
       </div>
-      <div class="stat-glass">
-        <i data-lucide="award" class="icon-20 icon-success"></i>
-        <span class="stat-val stat-success-text" id="activeRewards">0</span>
-        <span class="stat-lbl">Active Rewards</span>
-      </div>
-    </div>
     </div>
 
     <div class="card glass animate-in animate-delay-2">
@@ -176,13 +200,13 @@
       window._supabase = window.supabase;
       document.getElementById('user-name').textContent = user.name;
       document.getElementById('user-avatar').textContent = user.name.charAt(0);
-      
+
       const camInput = document.getElementById('img-camera');
       if (camInput) camInput.setAttribute('capture', 'environment');
 
       lucide.createIcons();
       loadRecords(user);
-      
+
       // Submit listener
       document.getElementById('giftForm').addEventListener('submit', (e) => submitGift(e, user));
     }
@@ -268,5 +292,4 @@
     }
   </script>
 </body>
-
 </html>

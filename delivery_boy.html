@@ -648,8 +648,8 @@
                     <button class="btn btn-outline btn-danger" onclick="resetPhoto()" title="Retake Photo">Retake
                         Photo</button>
                 </div>
-                <input type="file" id="img-camera" class="hidden" accept="image/*" onchange="handleImage(this)"
-                    title="Proof Camera">
+                <input type="file" id="img-camera" class="hidden" accept="image/*" data-capture="environment"
+                    onchange="handleImage(this)" title="Proof Camera">
             </div>
 
             <div id="action-buttons" class="modal-footer-actions"></div>
@@ -687,7 +687,7 @@
             try {
                 // Fetch ONLY orders assigned to this user from DB (Hard Isolation)
                 allOrders = await DeliveryStore.getAll(user.id);
-                
+
                 const active = allOrders.filter(o => o.status === 'assigned' || o.status === 'picked');
                 const history = allOrders.filter(o => o.status === 'delivered');
 

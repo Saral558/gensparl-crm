@@ -108,9 +108,9 @@
               </button>
             </div>
             <label for="eCamera" class="hidden">Camera Upload</label>
-            <input type="file" id="eCamera" accept="image/*" class="hidden" onchange="previewImg(this)" title="Capture Expense Receipt">
+            <input type="file" id="eCamera" accept="image/*" data-capture="environment" class="hidden" onchange="previewImg(this)" title="Capture Expense Receipt">
             <label for="fGallery" class="hidden">Gallery Upload</label>
-            <input type="file" id="fGallery" accept="image/*" class="hidden" onchange="previewImg(this)" title="Choose from Gallery">
+            <input type="file" id="sCamera" accept="image/*" data-capture="environment" class="hidden" onchange="previewPhoto(this)" title="Capture Sales Proof">
           </div>
         </div>
         <button type="submit" class="btn btn-primary w-full mt-20" id="subBtn">Save Expense</button>
