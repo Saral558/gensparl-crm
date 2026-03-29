@@ -25,7 +25,16 @@ window.StaffManagement = () => {
     const [search, setSearch] = React.useState('');
 
     React.useEffect(() => { loadStaff(); }, []);
-    const loadStaff = async () => setStaff(await db.get('profiles'));
+    const loadStaff = async () => {
+        const { data, error } = await window.supabase.from('profiles').select('*').eq('active', true);
+        if (error) {
+            console.error("Database error loading users:", error);
+            showToast('Failed to load users', 'error');
+            setStaff([]);
+        } else {
+            setStaff(data || []);
+        }
+    };
 
     const defaultForm = { name: '', username: '', mobile: '', role: 'sales', password: '', active: true };
     const [form, setForm] = React.useState(defaultForm);
@@ -89,11 +98,31 @@ window.StaffManagement = () => {
         await loadStaff();
     };
 
-    const handleDelete = async (id) => {
-        await db.delete('profiles', id);
-        showToast('Staff removed', 'warning');
-        await loadStaff();
-        setDeleteId(null);
+    const handleDelete = async (userId) => {
+        if (!isAdmin) {
+            showToast('Access Denied', 'error');
+            return;
+        }
+        
+        try {
+            const { error } = await window.supabase
+                .from('profiles')
+                .update({ active: false })
+                .eq('id', userId);
+                
+            if (error) {
+                console.error("Supabase update error:", error);
+                showToast('Deactivation failed: ' + error.message, 'error');
+                return;
+            }
+            showToast('User deactivated', 'success');
+            await loadStaff();
+        } catch (err) {
+            console.error("Unexpected error during soft delete:", err);
+            showToast('Failed to deactivate user: ' + err.message, 'error');
+        } finally {
+            setDeleteId(null);
+        }
     };
 
     let filtered = staff.filter(s => s.id !== 'u1' || isAdmin); // always show all
@@ -212,7 +241,7 @@ window.StaffManagement = () => {
                                 onClick: () => toggleActive(s.id, s.active !== false),
                                 style: { flex: 1, justifyContent: 'center' }
                             }, isInactive ? '✅ Activate' : '⏸ Deactivate'),
-                            s.id !== user.id && React.createElement('button', {
+                            (s.id !== user.id && isAdmin) && React.createElement('button', {
                                 className: 'btn btn-sm btn-danger',
                                 onClick: () => setDeleteId(s.id)
                             }, '🗑️')

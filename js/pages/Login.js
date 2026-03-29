@@ -16,8 +16,8 @@ window.LoginPage = () => {
             setError('Please enter Staff ID and password');
             return;
         }
-        if (staffId.length !== 6) {
-            setError('Staff ID must be exactly 6 digits');
+        if (staffId.length < 4 || staffId.length > 5) {
+            setError('Staff ID must be 4 digits');
             return;
         }
         setLoading(true);
@@ -78,11 +78,11 @@ window.LoginPage = () => {
 
                 React.createElement('form', { onSubmit: handleSubmit },
                     React.createElement('div', { style: { marginBottom: 20 } },
-                        React.createElement('label', { style: { display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 } }, '6-Digit Staff ID'),
+                        React.createElement('label', { style: { display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 } }, 'Staff ID (4 Digits)'),
                         React.createElement('input', {
                             type: 'text', value: staffId,
                             onChange: e => setStaffId(e.target.value.replace(/\D/g, '').slice(0, 6)),
-                            placeholder: '100xxx',
+                            placeholder: 'ID (e.g. 1001)',
                             style: { width: '100%', padding: '12px 16px', borderRadius: 12, border: '1.5px solid #E2E8F0', outline: 'none', transition: 'border-color 0.2s' },
                             className: 'focus-indigo'
                         })
@@ -120,10 +120,10 @@ window.LoginPage = () => {
                 // Demo buttons
                 React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 } },
                     [
-                        { label: '👨‍💼 Admin', id: '100101', p: 'Admin@123' },
-                        { label: '💼 Sales', id: '100201', p: 'Bijay@123' },
-                        { label: '🚚 Delivery', id: '100401', p: 'Deepak@123' },
-                        { label: '🔧 Service', id: '100501', p: 'Sunil@123' }
+                        { label: '👨‍💼 Admin', id: '1001', p: '123654' },
+                        { label: '💼 Sales', id: '1005', p: '123654' },
+                        { label: '🚚 Delivery', id: '1002', p: '123654' },
+                        { label: '🔧 Service', id: '1003', p: '123654' }
                     ].map(u => 
                         React.createElement('button', {
                             key: u.id, onClick: () => quickLogin(u.id, u.p),

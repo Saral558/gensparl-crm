@@ -172,12 +172,13 @@
   <script src="js/supabase-client.js"></script>
   <script src="app.js"></script>
   <script>
+    let currentUser = null;
     async function init() {
-      const user = await checkAuth('inventory');
-      if (!user) return;
+      currentUser = await checkAuth('inventory');
+      if (!currentUser) return;
 
-      document.getElementById('user-name').textContent = user.name;
-      document.getElementById('user-avatar').textContent = user.name.charAt(0);
+      document.getElementById('user-name').textContent = currentUser.name;
+      document.getElementById('user-avatar').textContent = currentUser.name.charAt(0);
       lucide.createIcons();
       loadInventory(user);
     }
@@ -189,16 +190,16 @@
       }
       function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-      async function loadInventory(user) {
+      async function loadInventory() {
+        if (!currentUser) return;
         const grid = document.getElementById('inventoryGrid');
         grid.innerHTML = '<div class="grid-loading"><div class="spinner"></div><div>Loading inventory...</div></div>';
 
         try {
-          if (!user) return;
           const { data, error } = await window.supabase
             .from('staff_inventory')
             .select('*')
-            .eq('staff_id', user.id)
+            .eq('staff_id', currentUser.id)
             .order('status', { ascending: true })
             .order('updated_at', { ascending: false });
 
@@ -273,10 +274,9 @@
         const payload = {
           item_name: document.getElementById('itemName').value,
           buying_price: parseFloat(document.getElementById('buyPrice').value),
-          selling_price: parseFloat(document.getElementById('sellPrice').value || 0),
           stock_quantity: parseInt(document.getElementById('stockQty').value),
           category: document.getElementById('category').value,
-          staff_id: user.id
+          staff_id: currentUser.id
         };
 
         try {
@@ -285,7 +285,7 @@
 
           closeModal('addModal');
           e.target.reset();
-          loadInventory(user);
+          loadInventory();
         } catch (err) {
           alert("Error adding item: " + err.message);
         } finally {
@@ -317,12 +317,12 @@
             .from('staff_inventory')
             .update({ stock_quantity: qty })
             .eq('id', id)
-            .eq('staff_id', user.id); // Security: only update your own
+            .eq('staff_id', currentUser.id); // Security: only update your own
 
           if (error) throw error;
 
           closeModal('updateModal');
-          loadInventory(user);
+          loadInventory();
 
           // Check for low stock alert after update
           if (qty < 20) {

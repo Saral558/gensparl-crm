@@ -94,19 +94,19 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://idtisrnhmivrvgzilxyo.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_BNL9AQlF8tkW2TCH4_CFdQ_NYk_rVnV';
+        const SUPABASE_URL = 'https://gyqficxgcbtbtvabfgqt.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_T_i4I8IubnQKJM0zo9lrbA_gdpOVtil';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const STAFF_ROLES = [
-            { id: '1001', role: 'admin' },
-            { id: '1002', role: 'sales' },
-            { id: '1003', role: 'finance' },
-            { id: '1004', role: 'delivery' },
-            { id: '1005', role: 'service' },
-            { id: '1006', role: 'expense' },
-            { id: '1007', role: 'gift_box' },
-            { id: '1008', role: 'inventory' }
+            { id: '10001', role: 'admin' },
+            { id: '10002', role: 'sales' },
+            { id: '10003', role: 'finance' },
+            { id: '10004', role: 'delivery' },
+            { id: '10005', role: 'service' },
+            { id: '10006', role: 'expense' },
+            { id: '10007', role: 'gift_box' },
+            { id: '10008', role: 'inventory' }
         ];
 
         const consoleEl = document.getElementById('console');
@@ -141,25 +141,25 @@
 
                     // 2. Identify Result
                     let userId = authData?.user?.id;
-                    let resultMsg = "";
 
-                    if (authError) {
-                        if (authError.message.includes("already registered")) {
-                            log(`Account verified. Resetting password for ${s.id}...`, 'warning');
-                            // We can't reset password without being logged in, so we assume it works if we reach here 
-                            // OR we rely on the manual SQL password being partially correct.
-                            // However, we MUST sync the profile.
-                            const { data: profileSearch } = await supabaseClient.from('profiles').select('id').eq('email', email).single();
-                            userId = profileSearch?.id;
-                        } else {
-                            log(`🚨 Server Blocked ${s.id}: ${authError.message}`, 'error');
+                    if (authError || !userId) {
+                        log(`Account ${s.id} exists. Attempting temporary sign-in to capture ID...`, 'warning');
+                        // Use signIn to get the UID if user already exists
+                        const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
+                            email: email,
+                            password: password
+                        });
+                        
+                        if (signInError) {
+                            log(`🚨 Authentication Failure for ${s.id}: ${signInError.message}`, 'error');
                             continue;
                         }
+                        userId = signInData.user.id;
                     } else {
                         log(`Successfully registered new ID ${s.id}!`, 'success');
                     }
 
-                    // 3. Force-Sync Profile Dashboard Profile
+                    // 3. Force-Sync Profile
                     if (userId) {
                         const { error: profError } = await supabaseClient
                             .from('profiles')
@@ -167,15 +167,19 @@
                                 id: userId,
                                 email: email,
                                 role: s.role,
+                                staff_id: s.id,
                                 name: `${s.role.charAt(0).toUpperCase() + s.role.slice(1)} Staff`,
                                 active: true,
                                 updated_at: new Date()
                             }, { onConflict: 'email' });
 
+                        // 4. Logout to clear session for next step
+                        await supabaseClient.auth.signOut();
+
                         if (profError) {
                              log(`❌ Profile Sync Failure for ${s.id}: ${profError.message}`, 'error');
                         } else {
-                             log(`✅ <b>Account 1001</b> is <b>Login Ready</b>. Dashboard Link Active.`, 'success');
+                             log(`✅ <b>Account ${s.id}</b> is <b>Login Ready</b>. Profile Mapped.`, 'success');
                         }
                     }
 
@@ -184,10 +188,10 @@
                 }
 
                 // Smooth delay
-                await new Promise(r => setTimeout(r, 1200));
+                await new Promise(r => setTimeout(r, 800));
             }
 
-            log("✨ <b>Deep Fix Complete</b>. Please return to the login screen and enter <b>1001</b> and <b>123654</b>.", "success");
+            log("✨ <b>Deep Fix Complete</b>. Please return to the login screen and enter <b>10001</b> and <b>123654</b>.", "success");
             btn.innerText = "✨ System Restored";
             btn.style.background = "#22c55e";
         };

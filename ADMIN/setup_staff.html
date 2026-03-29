@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gensparl CRM — Backend Setup</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap"
+        rel="stylesheet">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -15,6 +17,7 @@
             --success: #22c55e;
             --error: #ef4444;
         }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: var(--bg);
@@ -25,19 +28,30 @@
             min-height: 100vh;
             margin: 0;
         }
+
         .setup-card {
             background: var(--card);
             -webkit-backdrop-filter: blur(20px);
             backdrop-filter: blur(20px);
             padding: 40px;
             border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             max-width: 500px;
             width: 100%;
             text-align: center;
         }
-        h1 { margin-bottom: 8px; font-weight: 800; }
-        p { opacity: 0.7; font-size: 14px; margin-bottom: 30px; }
+
+        h1 {
+            margin-bottom: 8px;
+            font-weight: 800;
+        }
+
+        p {
+            opacity: 0.7;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
         .btn {
             background: var(--accent);
             color: #000;
@@ -49,47 +63,59 @@
             transition: transform 0.2s;
             width: 100%;
         }
-        .btn:active { transform: scale(0.98); }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
         #logs {
             margin-top: 30px;
             text-align: left;
             font-size: 12px;
             max-height: 200px;
             overflow-y: auto;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
             padding: 15px;
             border-radius: 12px;
             display: none;
         }
-        .log-entry { margin-bottom: 4px; }
-        .log-success { color: var(--success); }
-        .log-error { color: var(--error); }
+
+        .log-entry {
+            margin-bottom: 4px;
+        }
+
+        .log-success {
+            color: var(--success);
+        }
+
+        .log-error {
+            color: var(--error);
+        }
     </style>
 </head>
+
 <body>
     <div class="setup-card">
         <h1>Backend Setup</h1>
-        <p>This tool will register 8 staff accounts (1001-1008) with the password <b>123654</b>.</p>
-        
+        <p>This tool will register 5 staff accounts (1001-1005) with the password <b>123654</b>.</p>
+
         <button id="setupBtn" class="btn">🚀 Run Staff Setup</button>
-        
+
         <div id="logs"></div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://idtisrnhmivrvgzilxyo.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_BNL9AQlF8tkW2TCH4_CFdQ_NYk_rVnV';
+        const SUPABASE_URL = 'https://gyqficxgcbtbtvabfgqt.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_T_i4I8IubnQKJM0zo9lrbA_gdpOVtil';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const STAFF = [
-            { id: '1001', role: 'admin' },
-            { id: '1002', role: 'sales' },
-            { id: '1003', role: 'finance' },
-            { id: '1004', role: 'delivery' },
-            { id: '1005', role: 'service' },
-            { id: '1006', role: 'expense' },
-            { id: '1007', role: 'gift_box' },
-            { id: '1008', role: 'inventory' }
+            { id: '1001', role: 'admin', name: 'Admin' },
+            { id: '1002', role: 'delivery', name: 'Bijay' },
+            { id: '1003', role: 'expense', name: 'Ramesh' },
+            { id: '1004', role: 'gift_box', name: 'Deepak' },
+            { id: '1005', role: 'sales', name: 'Sunil' },
+            { id: '6001', role: 'delivery_manager', name: 'Delivery Manager' }
         ];
 
         const logEl = document.getElementById('logs');
@@ -109,67 +135,88 @@
             logEl.style.display = 'block';
             log("Starting staff registration process...");
 
-            for (const s of STAFF) {
-                const email = `${s.id}@dineshcrm.com`;
-                log(`Processing ${email} (${s.role})...`);
+            for (let i = 0; i < STAFF.length; i++) {
+                const s = STAFF[i];
+                const email = `${s.id}@dineshcrm.com`; // Switched to dineshcrm.com
+                const password = '123654';
+                
+                log(`[${i+1}/${STAFF.length}] Preparing ${email}...`, 'info');
                 
                 try {
-                    // 1. Sign up the user
-                    const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-                        email: email,
-                        password: '123654'
+                    // 1. Try to register
+                    let { data: authData, error: authError } = await supabaseClient.auth.signUp({
+                        email: email, password: password
                     });
 
-                    let userId = authData?.user?.id;
-                    let isNew = !!authData?.user;
-
                     if (authError) {
-                        if (authError.message.includes("already registered")) {
-                            log(`Account ${s.id} exists. Attempting fetch...`, 'info');
-                            // We can't get the ID from signUp error, so we find it in the public profiles if it exists
-                            const { data: pData } = await supabaseClient.from('profiles').select('id').eq('email', email).single();
-                            userId = pData?.id;
-                            isNew = false;
-                        } else {
-                            log(`Auth Error for ${s.id}: ${authError.message}`, 'error');
+                        if (authError.message.includes("Signups are disabled")) {
+                            log(`🚨 CRITICAL: Signups are DISABLED in your Supabase Auth settings. Please go to your Supabase Dashboard -> Authentication -> Providers -> Email and turn ON 'Enable Signups'.`, 'error');
+                            break; // Stop everything
+                        }
+                        
+                        if (authError.message.includes("rate limit")) {
+                            log(`⏳ Rate Limited! Waiting 60 seconds before retrying...`, 'warning');
+                            await new Promise(r => setTimeout(r, 60000));
+                            i--; // Retry same user
                             continue;
                         }
                     }
 
+                    let userId = authData?.user?.id;
+                    let isNew = !!authData?.user;
+
+                    // 2. REPAIR LOGIC: If user exists, sign in temporarily to get ID
+                    if (!userId) {
+                        log(`Account ${s.id} might exist. Verifying...`, 'info');
+                        const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
+                            email: email, password: password
+                        });
+                        
+                        if (signInError) {
+                            log(`❌ Login Check Failed for ${s.id}: ${signInError.message}`, 'error');
+                            log(`Try deleting the user ${email} from Supabase Auth Dashboard first.`, 'warning');
+                            continue;
+                        }
+                        userId = signInData.user.id;
+                        isNew = false;
+                    }
+
                     if (userId) {
-                        // 2. Synchronize Profile (Zero Error Mapping)
-                        const { error: profError } = await supabaseClient
-                            .from('profiles')
-                            .upsert({
-                                id: userId,
-                                email: email,
-                                role: s.role,
-                                name: `${s.role.charAt(0).toUpperCase() + s.role.slice(1)} Staff`,
-                                active: true
-                            }, { onConflict: 'email' });
+                        // 2. Sync Profile
+                        const { error: profError } = await supabaseClient.from('profiles').upsert({
+                            id: userId, email: email, role: s.role, staff_id: s.id,
+                            name: s.name,
+                            active: true
+                        }, { onConflict: 'email' });
+
+                        await supabaseClient.auth.signOut();
 
                         if (profError) {
-                            log(`❌ Profile Sync Failure for ${s.id}: ${profError.message}`, 'error');
+                            log(`❌ Profile sync failed for ${s.id}: ${profError.message}`, 'error');
                         } else {
-                            const statusLabel = isNew ? "Created" : "Synced";
-                            log(`✅ ${s.id} (${s.role}) — ${statusLabel}!`, 'success');
+                            log(`✅ ${s.id} is READY! (${isNew ? "Created" : "Repaired"})`, 'success');
                         }
-                    } else {
-                        log(`🚨 Failed to obtain ID for ${s.id}. Ensure you are signed in as Admin.`, 'error');
                     }
                 } catch (e) {
-                    log(`Unexpected system error for ${s.id}: ${e.message}`, 'error');
+                    log(`Unexpected error: ${e.message}`, 'error');
                 }
                 
-                await new Promise(r => setTimeout(r, 1000)); // Safer delay
+                // ⏳ RATE LIMIT BYPASS: Wait 15 seconds before next account
+                if (i < STAFF.length - 1) {
+                    log(`Waiting 15 seconds for Rate Limit bypass...`, 'info');
+                    for(let countdown = 15; countdown > 0; countdown--) {
+                        btn.innerText = `⏳ Next in ${countdown}s...`;
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                }
             }
 
-
-
-            log("✅ Staff setup completed.", "success");
-            btn.innerText = "✨ Setup Complete";
+            log("🎉 ALL ACCOUNTS SYNCED SUCCESSFULLY!", "success");
+            log("You can now login with the IDs from the image and password 123654.", "info");
+            btn.innerText = "✨ Setup Finished!";
             btn.style.background = "#22c55e";
         };
     </script>
 </body>
+
 </html>

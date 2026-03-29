@@ -7,16 +7,37 @@
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <link rel="manifest" href="/manifest.json">
   <meta name="description" content="Gensparl CRM - Expense Tracking for staff.">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="css/theme.css">
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .exp-title-text { font-weight: 700; font-size: 15px; }
-    .exp-cat-text { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-    .exp-amt-text { font-weight: 800; color: var(--danger); font-size: 16px; }
-    .exp-date-text { font-size: 12px; color: var(--text-muted); }
-    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .exp-title-text {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .exp-cat-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .exp-amt-text {
+      font-weight: 800;
+      color: var(--danger);
+      font-size: 16px;
+    }
+
+    .exp-date-text {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
     .photo-area {
       grid-column: 1 / -1;
       background: rgba(255, 255, 255, 0.03);
@@ -24,7 +45,7 @@
       border-radius: 20px;
       border: 1px dashed var(--border);
     }
-    
+
     .preview-img-exp {
       display: none;
       width: 100%;
@@ -33,7 +54,7 @@
       border: 1px solid var(--border);
       object-fit: contain;
       height: 200px;
-      background: rgba(0,0,0,0.2);
+      background: rgba(0, 0, 0, 0.2);
     }
   </style>
 
@@ -94,29 +115,33 @@
             <label class="input-label">Narration</label>
             <input type="text" id="eNarr" placeholder="Additional details..." title="Narration">
           </div>
-          
+
           <!-- Mandatory Photo Section -->
           <div class="photo-area">
             <label class="input-label">Photo Proof (Mandatory 📸)</label>
             <img id="previewImgExp" alt="Expense Receipt" class="preview-img-exp hidden">
             <div class="flex-center gap-10">
-              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('eCamera').click()" title="Take photo">
+              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('eCamera').click()"
+                title="Take photo">
                 <i data-lucide="camera"></i> Camera
               </button>
-              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('fGallery').click()" title="Upload photo">
+              <button type="button" class="btn btn-outline flex-1" onclick="document.getElementById('fGallery').click()"
+                title="Upload photo">
                 <i data-lucide="image"></i> Gallery
               </button>
             </div>
             <label for="eCamera" class="hidden">Camera Upload</label>
-            <input type="file" id="eCamera" accept="image/*" data-capture="environment" class="hidden" onchange="previewImg(this)" title="Capture Expense Receipt">
+            <input type="file" id="eCamera" accept="image/*" data-capture="environment" class="hidden"
+              onchange="previewImg(this)" title="Capture Expense Receipt">
             <label for="fGallery" class="hidden">Gallery Upload</label>
-            <input type="file" id="sCamera" accept="image/*" data-capture="environment" class="hidden" onchange="previewPhoto(this)" title="Capture Sales Proof">
+            <input type="file" id="eCamera" accept="image/*" data-capture="environment" class="hidden"
+              onchange="previewPhoto(this)" title="Capture Sales Proof">
           </div>
         </div>
         <button type="submit" class="btn btn-primary w-full mt-20" id="subBtn">Save Expense</button>
       </form>
     </div>
-
+    ""
     <div class="card glass animate-in animate-delay-2">
       <div class="section-header">
         <h2>Recent Expenses</h2>
@@ -138,23 +163,23 @@
           </tbody>
         </table>
       </div>
-      </div>
     </div>
-    <!-- Bottom Nav -->
-    <nav class="bottom-nav">
-      <a href="index.html" class="nav-item" title="Home">
-        <i data-lucide="layout-grid"></i>
-        Home
-      </a>
-      <a href="#" class="nav-item active" title="Expenses">
-        <i data-lucide="receipt"></i>
-        Expenses
-      </a>
-      <button class="nav-item nav-logout-btn" onclick="logout()" title="Sign Out">
-        <i data-lucide="log-out"></i>
-        Sign Out
-      </button>
-    </nav>
+  </div>
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item" title="Home">
+      <i data-lucide="layout-grid"></i>
+      Home
+    </a>
+    <a href="#" class="nav-item active" title="Expenses">
+      <i data-lucide="receipt"></i>
+      Expenses
+    </a>
+    <button class="nav-item nav-logout-btn" onclick="logout()" title="Sign Out">
+      <i data-lucide="log-out"></i>
+      Sign Out
+    </button>
+  </nav>
   </div>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -170,13 +195,13 @@
       document.getElementById('user-name').textContent = user.name;
       document.getElementById('user-avatar').textContent = user.name.charAt(0);
       document.getElementById('eDate').valueAsDate = new Date();
-      
+
       const camInput = document.getElementById('eCamera');
       if (camInput) camInput.setAttribute('capture', 'environment');
 
       lucide.createIcons();
       loadRecords(user);
-      
+
       // Submit listener
       document.getElementById('expForm').addEventListener('submit', (e) => submitExp(e, user));
     }

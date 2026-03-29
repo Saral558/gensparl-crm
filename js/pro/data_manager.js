@@ -33,7 +33,7 @@ const DataManager = {
         try {
             const [s, p, o, sv, f, ex, g] = await Promise.all([
                 client.from('sales').select('*').order('created_at', { ascending: false }),
-                client.from('profiles').select('*').order('name'),
+                client.from('profiles').select('*').eq('active', true).order('name'),
                 client.from('orders').select('*').order('created_at', { ascending: false }),
                 client.from('service').select('*').order('created_at', { ascending: false }),
                 client.from('finance').select('*').order('created_at', { ascending: false }),
